@@ -57,6 +57,7 @@
     <string name="pick_app_title">Choose an app</string>
     <string name="apps_move_hint">Arrows move the app. OK or Back to put it down.</string>
     <string name="pinned_count_label">Pinned apps</string>
+    <string name="apps_uninstall">Uninstall</string>
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>

@@ -46,6 +46,12 @@ public final class AppsActivity extends Activity {
     static final int DEFAULT_COLUMNS = 4;
     /** The owner's order on this screen: component keys, one per line. */
     static final String APPS_ORDER_KEY = "apps_screen_order";
+    /** Start extra: choose an app for a pinned place instead of opening one. The result carries EXTRA_COMPONENT. */
+    static final String EXTRA_PICK = "com.gathin.tvhome.extra.PICK";
+    /** Result extra: the chosen app's component, flattened short (the Home tile key). */
+    static final String EXTRA_COMPONENT = "com.gathin.tvhome.extra.COMPONENT";
+    private boolean pick;
+    private android.widget.PopupWindow menu;
     private static final long HOLD_OK_MS = 550;
     private static final int MOVE_ACCENT = 0xFF6EC1FF;
 
@@ -60,7 +66,7 @@ public final class AppsActivity extends Activity {
     private final Runnable holdTimer = () -> {
         if (!okDown) return;
         holdFired = true;
-        pickUp();
+        showMenu();
     };
     private static final float FOCUS_SCALE = 1.08f;
 
@@ -76,6 +82,7 @@ public final class AppsActivity extends Activity {
         super.onCreate(state);
         density = getResources().getDisplayMetrics().density;
         choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        pick = getIntent().getBooleanExtra(EXTRA_PICK, false);
         columns = Math.max(3, Math.min(8, choices.getInt(APPS_COLUMNS_KEY, DEFAULT_COLUMNS)));
 
         LinearLayout page = new LinearLayout(this);
@@ -87,7 +94,7 @@ public final class AppsActivity extends Activity {
         page.setPadding(side - inset, dp(36), side - inset, 0);
 
         TextView title = new TextView(this);
-        title.setText(R.string.apps_screen);
+        title.setText(pick ? R.string.pick_app_title : R.string.apps_screen);
         title.setTextColor(Color.WHITE);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 34);
         title.setTypeface(UiFont.get(this, R.string.font_light));
@@ -186,7 +193,7 @@ public final class AppsActivity extends Activity {
         }
         // The remote's Menu key picks the focused app up too.
         if (code == KeyEvent.KEYCODE_MENU) {
-            if (!down && focusedPosition() >= 0) pickUp();
+            if (!down && focusedPosition() >= 0) showMenu();
             return true;
         }
         if (ok) {
@@ -202,12 +209,15 @@ public final class AppsActivity extends Activity {
                     // A remote that repeats while held: the repeats say it is a hold before the timer does.
                     grid.removeCallbacks(holdTimer);
                     holdFired = true;
-                    pickUp();
+                    showMenu();
                 }
             } else {
                 okDown = false;
                 grid.removeCallbacks(holdTimer);
-                if (!holdFired) open(tiles.apps.get(pos));
+                if (!holdFired) {
+                    if (pick) choose(tiles.apps.get(pos));
+                    else open(tiles.apps.get(pos));
+                }
                 holdFired = false;
             }
             return true;
@@ -222,9 +232,98 @@ public final class AppsActivity extends Activity {
         return item != null ? grid.getChildAdapterPosition(item) : -1;
     }
 
-    private void pickUp() {
+    /** Pick mode: hand the chosen app back to Home. */
+    private void choose(App app) {
+        setResult(RESULT_OK, new Intent().putExtra(EXTRA_COMPONENT, app.component.flattenToShortString()));
+        finish();
+    }
+
+    /** Hold OK or Menu on an app: Move and App info, as on Home's pinned row. None in pick mode. */
+    private void showMenu() {
+        if (pick || (menu != null && menu.isShowing())) return;
         int pos = focusedPosition();
         if (pos < 0) return;
+        App app = tiles.apps.get(pos);
+        View anchor = getCurrentFocus();
+        View panel = getLayoutInflater().inflate(R.layout.popup_inputs, null, false);
+        LinearLayout rows = panel.findViewById(R.id.rows);
+        menu = new android.widget.PopupWindow(panel, dp(220), ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        menu.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+        menu.setOutsideTouchable(true);
+        menu.setElevation(0f);
+        addMenuRow(rows, R.string.tile_move, () -> pickUpAt(pos));
+        if (removable(app.component.getPackageName())) addMenuRow(rows, R.string.apps_uninstall, () -> {
+            // The system's own confirmation asks; nothing is removed without it.
+            Intent delete = new Intent(Intent.ACTION_DELETE, android.net.Uri.fromParts("package", app.component.getPackageName(), null));
+            try {
+                startActivity(delete.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } catch (RuntimeException e) {
+                android.widget.Toast.makeText(this, R.string.not_available, android.widget.Toast.LENGTH_SHORT).show();
+            }
+        });
+        Intent info = SystemSettings.appInfo(this, app.component.getPackageName());
+        if (info != null) addMenuRow(rows, R.string.library_app_info, () -> {
+            try {
+                startActivity(info.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } catch (RuntimeException ignored) {
+            }
+        });
+        menu.showAsDropDown(anchor, 0, dp(10), Gravity.START);
+        rows.getChildAt(0).requestFocus();
+    }
+
+    /** An app the owner installed: not part of the firmware, so Uninstall removes it rather than failing. */
+    private boolean removable(String pkg) {
+        try {
+            android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(pkg, 0);
+            return (ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    /** Back from an uninstall: drop the apps that are gone. */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (tiles == null) return;
+        PackageManager pm = getPackageManager();
+        for (int i = tiles.apps.size() - 1; i >= 0; i--) {
+            try {
+                pm.getApplicationInfo(tiles.apps.get(i).component.getPackageName(), 0);
+            } catch (PackageManager.NameNotFoundException gone) {
+                tiles.apps.remove(i);
+                tiles.notifyItemRemoved(i);
+            }
+        }
+    }
+
+    private void addMenuRow(LinearLayout rows, int title, Runnable action) {
+        View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
+        row.findViewById(R.id.icon).setVisibility(View.GONE);
+        row.findViewById(R.id.dot).setVisibility(View.GONE);
+        row.findViewById(R.id.status).setVisibility(View.GONE);
+        ((TextView) row.findViewById(R.id.title)).setText(title);
+        // The OK-up of the hold that opened the menu must not activate its first row: only a press made here counts.
+        final boolean[] pressed = {false};
+        row.setOnKeyListener((v, code, event) -> {
+            if (code != KeyEvent.KEYCODE_DPAD_CENTER && code != KeyEvent.KEYCODE_ENTER) return false;
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                if (event.getRepeatCount() == 0) pressed[0] = true;
+                return true;
+            }
+            if (pressed[0]) {
+                pressed[0] = false;
+                menu.dismiss();
+                action.run();
+            }
+            return true;
+        });
+        rows.addView(row);
+    }
+
+    private void pickUpAt(int pos) {
+        if (pos < 0 || pos >= tiles.apps.size()) return;
         moving = pos;
         tiles.notifyItemChanged(pos);
         focusAt(pos);

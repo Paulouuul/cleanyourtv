@@ -1181,6 +1181,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_APP_REQUEST) {
+            String slotKey = replaceSlotKey;
+            replaceSlotKey = null;
+            String chosen = resultCode == RESULT_OK && data != null ? data.getStringExtra(AppsActivity.EXTRA_COMPONENT) : null;
+            // After onResume has rebuilt the tiles.
+            if (slotKey != null && chosen != null) grid.post(() -> replacePinned(slotKey, chosen));
+            return;
+        }
         if (requestCode == LAUNCHER_SETTINGS_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) {
             getIntent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true);
@@ -1648,6 +1656,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             focusTile(0);
             Toast.makeText(this, R.string.dock_edit_pick_place, Toast.LENGTH_LONG).show();
         }
+    }
+
+    private static final int PICK_APP_REQUEST = 7;
+    /** apps_screen: the pinned tile whose place the Apps screen is choosing an app for. */
+    private String replaceSlotKey;
+
+    /** apps_screen: puts the chosen app in the pinned place slotKey holds, as Edit pinned would, and saves. */
+    private void replacePinned(String slotKey, String chosenKey) {
+        if (reordering) endReorder();
+        if (slotKey.equals(chosenKey) || !beginReorder(true)) return;
+        dockEditing = true;
+        int slot = adapter.positionOf(slotKey);
+        int pos = adapter.positionOf(chosenKey);
+        if (slot < 0 || slot >= COLUMNS || pos < 0) {
+            endReorder();
+            return;
+        }
+        swapIntoDock(slot, pos);
     }
 
     /** Puts the app at pos into dock place slot, and the app that was there where the chosen one was; then saves. */
@@ -4113,8 +4139,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
         if (dockRow && position < adapter.movableCount()) {
             boolean inDock = position < COLUMNS;
-            addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock,
-                    () -> startDockEditFor(key, inDock));
+            addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock, () -> {
+                // apps_screen: the app is chosen on a screen of its own (the Apps grid, titled Choose an app),
+                // and Home comes back with it in this place.
+                if (appsScreen && inDock) {
+                    replaceSlotKey = key;
+                    startActivityForResult(new Intent(this, AppsActivity.class).putExtra(AppsActivity.EXTRA_PICK, true),
+                            PICK_APP_REQUEST);
+                } else {
+                    startDockEditFor(key, inDock);
+                }
+            });
         }
         if (position < adapter.movableCount()) addSettingsMenuRow(rows, popup, R.string.tile_move, () -> {
             if (!beginReorder()) return;
