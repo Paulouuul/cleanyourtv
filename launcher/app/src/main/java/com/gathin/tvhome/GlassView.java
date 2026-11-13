@@ -46,6 +46,12 @@ public class GlassView extends View {
 
     /** Tints the rim and the outer glow; 0 restores the plain white glass. */
     void setAccent(int argb) {
+        accent = argb;
+        if (flat) {
+            applyFlatRim();
+            invalidate();
+            return;
+        }
         if (argb == 0) {
             glowRgb = 0xFFFFFF;
             glowAlpha = 0x30;
@@ -66,7 +72,19 @@ public class GlassView extends View {
         flat = Config.GLASS_RIM.equals(style) || Config.GLASS_HALO.equals(style);
         halo = Config.GLASS_HALO.equals(style);
         rim.setStrokeWidth((flat ? 2f : 1.5f) * density);
+        if (flat) applyFlatRim();
         invalidate();
+    }
+
+    private int accent;
+
+    /**
+     * The flat styles draw the same outline as the Apps screen's tiles: solid white, 3dp, and the accent itself at
+     * 4dp while an app is carried, so focus reads the same on Home and on the Apps screen (TCL 32S5K build).
+     */
+    private void applyFlatRim() {
+        rim.setColor(accent == 0 ? 0xFFFFFFFF : 0xFF000000 | (accent & 0xFFFFFF));
+        rim.setStrokeWidth((accent == 0 ? 3f : 4f) * density);
     }
 
     void setRadius(float px) {
