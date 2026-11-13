@@ -340,9 +340,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             fresh.add(docked + i, new Entry(Entry.EMPTY, "", new ComponentName(ctx, "empty-dock-slot-" + i),
                     null, null, null, 0));
         }
-        // apps_screen: Home keeps the pinned row only; the Apps screen lists the rest. Reorder and Edit pinned need
-        // every app to pick from, so the full list stays while they run.
-        if (homeLimit > 0 && !reordering && fresh.size() > homeLimit) fresh = new ArrayList<>(fresh.subList(0, homeLimit));
+        // apps_screen: Home keeps the pinned row only; the Apps screen lists the rest. Replacing a pinned app needs
+        // every app to pick from, so the full list stays while that runs (setShowAll).
+        if (homeLimit > 0 && !showAll && fresh.size() > homeLimit) fresh = new ArrayList<>(fresh.subList(0, homeLimit));
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
@@ -354,6 +354,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private int homeLimit;
+    private boolean showAll;
+
+    /** apps_screen: true shows every app on Home for the next reloads (choosing an app for a pinned place). */
+    void setShowAll(boolean on) {
+        showAll = on;
+    }
 
     /** icon_tiles: the app's icon centred on a dark banner-shaped tile, for apps whose own banner crops badly. */
     private Drawable iconBanner(Drawable icon) {

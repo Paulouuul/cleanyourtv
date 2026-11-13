@@ -103,6 +103,9 @@
     <string name="columns_label">Apps por fileira</string>
     <string name="apps_screen">Apps</string>
     <string name="apps_screen_columns_label">Apps por fileira na tela Apps</string>
+    <string name="pick_app_title">Selecione um aplicativo</string>
+    <string name="apps_move_hint">Use as setas para mover o app. OK ou Voltar para soltar.</string>
+    <string name="pinned_count_label">Apps fixados</string>
     <string name="dock_opacity_label">Opacidade da faixa dos fixados</string>
     <string name="rows_below_dock_label">Fileiras abaixo dos fixados</string>
     <string name="wallpaper_label">Papel de parede</string>

@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -34,13 +35,33 @@ import java.util.Set;
 /**
  * apps_screen: every installed TV app in a grid of its own, opened from the Apps button in Home's top bar, so Home
  * keeps only the pinned apps and Continue watching. The number of apps per row is a Launcher settings choice
- * (APPS_COLUMNS_KEY, 4 by default). Alphabetical; OK opens the app, Back returns to Home.
+ * (APPS_COLUMNS_KEY, 4 by default). OK opens the app, Back returns to Home. Holding OK picks an app up: the arrows
+ * carry it through the grid, OK or Back puts it down, and the order is kept (APPS_ORDER_KEY); apps it does not
+ * know yet follow alphabetically.
  */
 public final class AppsActivity extends Activity {
 
     /** Launcher settings key for the apps per row on this screen. */
     static final String APPS_COLUMNS_KEY = "apps_screen_columns";
     static final int DEFAULT_COLUMNS = 4;
+    /** The owner's order on this screen: component keys, one per line. */
+    static final String APPS_ORDER_KEY = "apps_screen_order";
+    private static final long HOLD_OK_MS = 550;
+    private static final int MOVE_ACCENT = 0xFF6EC1FF;
+
+    private RecyclerView grid;
+    private Tiles tiles;
+    private int columns;
+    private SharedPreferences choices;
+    /** Position of the app being carried, or -1. */
+    private int moving = -1;
+    private boolean okDown;
+    private boolean holdFired;
+    private final Runnable holdTimer = () -> {
+        if (!okDown) return;
+        holdFired = true;
+        pickUp();
+    };
     private static final float FOCUS_SCALE = 1.08f;
 
     private float density;
@@ -54,8 +75,8 @@ public final class AppsActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         density = getResources().getDisplayMetrics().density;
-        SharedPreferences choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
-        int columns = Math.max(3, Math.min(8, choices.getInt(APPS_COLUMNS_KEY, DEFAULT_COLUMNS)));
+        choices = getSharedPreferences(Config.SETTINGS_NAME, MODE_PRIVATE);
+        columns = Math.max(3, Math.min(8, choices.getInt(APPS_COLUMNS_KEY, DEFAULT_COLUMNS)));
 
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
@@ -74,7 +95,7 @@ public final class AppsActivity extends Activity {
         tlp.setMarginStart(inset);
         page.addView(title, tlp);
 
-        RecyclerView grid = new RecyclerView(this);
+        grid = new RecyclerView(this);
         grid.setClipToPadding(false);
         grid.setClipChildren(false);
         grid.setPadding(inset, dp(16), inset, dp(40));
@@ -82,7 +103,9 @@ public final class AppsActivity extends Activity {
         int width = getResources().getDisplayMetrics().widthPixels - 2 * side;
         int gap = dp(columns >= 6 ? 14 : 22);
         int tileW = (width - gap * (columns - 1)) / columns;
-        grid.setAdapter(new Tiles(loadApps(), tileW, gap));
+        tiles = new Tiles(loadApps(), tileW, gap);
+        grid.setAdapter(tiles);
+        grid.setItemAnimator(null);   // a carried tile jumps cell to cell; no fade between them
         LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
         page.addView(grid, glp);
         setContentView(page);
@@ -123,8 +146,119 @@ public final class AppsActivity extends Activity {
             apps.add(new App(label, new ComponentName(pkg, ri.activityInfo.name), banner,
                     banner == null ? ri.loadIcon(pm) : null));
         }
-        Collections.sort(apps, (a, b) -> a.label.compareToIgnoreCase(b.label));
+        List<String> saved = new ArrayList<>();
+        for (String line : choices.getString(APPS_ORDER_KEY, "").split("\n")) if (!line.isEmpty()) saved.add(line);
+        Collections.sort(apps, (a, b) -> {
+            int ia = saved.indexOf(a.component.flattenToShortString()), ib = saved.indexOf(b.component.flattenToShortString());
+            if (ia >= 0 || ib >= 0) {
+                if (ia < 0) return 1;
+                if (ib < 0) return -1;
+                return Integer.compare(ia, ib);
+            }
+            return a.label.compareToIgnoreCase(b.label);
+        });
         return apps;
+    }
+
+    // ---- moving an app: hold OK, arrows, OK or Back -------------------------------------------------
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int code = event.getKeyCode();
+        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        boolean ok = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER
+                || code == KeyEvent.KEYCODE_NUMPAD_ENTER;
+        if (moving >= 0) {
+            if (ok || code == KeyEvent.KEYCODE_BACK || code == KeyEvent.KEYCODE_ESCAPE) {
+                if (!down) putDown();
+                return true;
+            }
+            int step = 0;
+            if (code == KeyEvent.KEYCODE_DPAD_LEFT) step = -1;
+            else if (code == KeyEvent.KEYCODE_DPAD_RIGHT) step = 1;
+            else if (code == KeyEvent.KEYCODE_DPAD_UP) step = -columns;
+            else if (code == KeyEvent.KEYCODE_DPAD_DOWN) step = columns;
+            if (step != 0) {
+                if (down) carry(step);
+                return true;
+            }
+            return true;   // nothing else while carrying
+        }
+        // The remote's Menu key picks the focused app up too.
+        if (code == KeyEvent.KEYCODE_MENU) {
+            if (!down && focusedPosition() >= 0) pickUp();
+            return true;
+        }
+        if (ok) {
+            int pos = focusedPosition();
+            if (pos < 0) return super.dispatchKeyEvent(event);
+            // The launcher times the hold itself: some remotes never deliver a long press to the view.
+            if (down) {
+                if (event.getRepeatCount() == 0) {
+                    okDown = true;
+                    holdFired = false;
+                    grid.postDelayed(holdTimer, HOLD_OK_MS);
+                } else if (!holdFired && (event.isLongPress() || event.getRepeatCount() > 1)) {
+                    // A remote that repeats while held: the repeats say it is a hold before the timer does.
+                    grid.removeCallbacks(holdTimer);
+                    holdFired = true;
+                    pickUp();
+                }
+            } else {
+                okDown = false;
+                grid.removeCallbacks(holdTimer);
+                if (!holdFired) open(tiles.apps.get(pos));
+                holdFired = false;
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    private int focusedPosition() {
+        View focus = getCurrentFocus();
+        if (focus == null) return -1;
+        View item = grid.findContainingItemView(focus);
+        return item != null ? grid.getChildAdapterPosition(item) : -1;
+    }
+
+    private void pickUp() {
+        int pos = focusedPosition();
+        if (pos < 0) return;
+        moving = pos;
+        tiles.notifyItemChanged(pos);
+        focusAt(pos);
+        android.widget.Toast.makeText(this, R.string.apps_move_hint, android.widget.Toast.LENGTH_SHORT).show();
+    }
+
+    private void carry(int step) {
+        int to = moving + step;
+        if (to < 0 || to >= tiles.apps.size()) return;
+        // Left and Right stay in the row; Up and Down keep the column.
+        if (Math.abs(step) == 1 && to / columns != moving / columns) return;
+        App app = tiles.apps.remove(moving);
+        tiles.apps.add(to, app);
+        tiles.notifyItemMoved(moving, to);
+        moving = to;
+        grid.scrollToPosition(to);
+        focusAt(to);
+    }
+
+    private void putDown() {
+        int pos = moving;
+        moving = -1;
+        tiles.notifyItemChanged(pos);
+        focusAt(pos);
+        StringBuilder order = new StringBuilder();
+        for (App a : tiles.apps) order.append(a.component.flattenToShortString()).append('\n');
+        choices.edit().putString(APPS_ORDER_KEY, order.toString()).apply();
+    }
+
+    private void focusAt(int pos) {
+        grid.post(() -> {
+            RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(pos);
+            if (vh instanceof Tiles.Holder) ((Tiles.Holder) vh).card.requestFocus();
+        });
     }
 
     private void open(App app) {
@@ -143,7 +277,7 @@ public final class AppsActivity extends Activity {
     }
 
     private final class Tiles extends RecyclerView.Adapter<Tiles.Holder> {
-        private final List<App> apps;
+        final List<App> apps;
         private final int tileW, tileH, gap;
 
         Tiles(List<App> apps, int tileW, int gap) {
@@ -207,13 +341,20 @@ public final class AppsActivity extends Activity {
             ring.setColor(Color.TRANSPARENT);
             ring.setCornerRadius(dp(14));
             ring.setStroke(dp(3), Color.WHITE);
+            GradientDrawable carried = new GradientDrawable();
+            carried.setColor(Color.TRANSPARENT);
+            carried.setCornerRadius(dp(14));
+            carried.setStroke(dp(4), MOVE_ACCENT);
+            card.setTag(R.id.card, carried);
+            card.setTag(ring);
+            Holder holder = new Holder(item, card, art, name);
             card.setOnFocusChangeListener((v, focused) -> {
                 v.animate().cancel();
                 v.animate().scaleX(focused ? FOCUS_SCALE : 1f).scaleY(focused ? FOCUS_SCALE : 1f).setDuration(150).start();
-                card.setForeground(focused ? ring : null);
+                card.setForeground(foregroundFor(card, focused, holder.getBindingAdapterPosition()));
                 name.setVisibility(focused ? View.VISIBLE : View.INVISIBLE);
             });
-            return new Holder(item, card, art, name);
+            return holder;
         }
 
         @Override
@@ -232,6 +373,13 @@ public final class AppsActivity extends Activity {
                 h.art.setImageDrawable(app.icon);
             }
             h.card.setOnClickListener(v -> open(app));
+            h.card.setForeground(foregroundFor(h.card, h.card.isFocused(), position));
+        }
+
+        /** White ring on the focused tile; the accent ring on the carried one, focused or not. */
+        private Drawable foregroundFor(View card, boolean focused, int position) {
+            if (moving >= 0 && position == moving) return (Drawable) card.getTag(R.id.card);
+            return focused ? (Drawable) card.getTag() : null;
         }
 
         @Override

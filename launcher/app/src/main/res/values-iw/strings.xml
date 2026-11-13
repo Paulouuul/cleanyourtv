@@ -52,6 +52,9 @@
     <string name="columns_label">אפליקציות בשורה</string>
     <string name="apps_screen">אפליקציות</string>
     <string name="apps_screen_columns_label">אפליקציות בכל שורה במסך האפליקציות</string>
+    <string name="pick_app_title">בחרו אפליקציה</string>
+    <string name="apps_move_hint">החצים מזיזים את האפליקציה. OK או חזרה כדי להניח אותה.</string>
+    <string name="pinned_count_label">אפליקציות מוצמדות</string>
     <string name="dock_opacity_label">עוצמת הרקע בשורת המועדפים</string>
     <string name="animations_state">הנפשות: %1$s</string>
     <string name="advanced_effects">אפקטים מתקדמים</string>

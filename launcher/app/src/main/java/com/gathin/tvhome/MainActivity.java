@@ -712,7 +712,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        int rowsBelowDock = cfg.rowsBelowDock;
+        // apps_screen: nothing sits below the pinned row on Home, whatever Launcher settings says.
+        int rowsBelowDock = appsScreen ? 0 : cfg.rowsBelowDock;
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
@@ -1483,7 +1484,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     return true;
                 default:
                     if (ok || back) {
-                        if (!down) drop();
+                        // apps_screen: moving a pinned app is one step; putting it down ends the mode and saves.
+                        if (!down) {
+                            if (appsScreen) endReorder();
+                            else drop();
+                        }
                         return true;
                     }
                     return super.dispatchKeyEvent(event);
@@ -1532,14 +1537,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The start shared by reorder and edit-dock mode. False when there is nothing to move. */
     private boolean beginReorder() {
-        if (adapter.movableCount() < 2) return false;
+        return beginReorder(false);
+    }
+
+    /**
+     * showAll (apps_screen): Home brings back every app for the session, to choose one for a pinned place. Moving a
+     * pinned app keeps Home to the pinned row: it only changes places there.
+     */
+    private boolean beginReorder(boolean showAll) {
+        if (adapter.movableCount() < 2 && !showAll) return false;
         // Before the reload below: once it has dropped the empty slots, the dock row also shows grid apps.
         dockInSession = new HashSet<>();
         dockedAtStart = adapter.dockFilled();
         for (int i = 0; i < Math.min(dockedAtStart, adapter.movableCount()); i++) dockInSession.add(adapter.keyAt(i));
         adapter.setReordering(true);
         // every position must hold a tile that can move; apps_screen: bring back the apps Home leaves off
-        if (adapter.hasEmptySlots() || appsScreen) reloadTiles();
+        showingAll = appsScreen && showAll;
+        adapter.setShowAll(showingAll);
+        if (adapter.hasEmptySlots() || showingAll) reloadTiles();
+        updatePickTitle();
         reordering = true;
         orderAtStart = adapter.movableKeys();
         glass.setAccent(REORDER_ACCENT);
@@ -1550,7 +1566,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Edit dock (Settings menu): focus goes to the first dock place, which OK then chooses. */
     private void startDockEdit() {
         if (reordering) endReorder();
-        if (!beginReorder()) return;
+        if (!beginReorder(true)) return;
         dockEditing = true;
         dockEditSlot = -1;
         focusTile(0);
@@ -1615,7 +1631,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     private void startDockEditFor(String key, boolean inDock) {
         if (reordering) endReorder();
-        if (!beginReorder()) return;
+        if (!beginReorder(true)) return;
         dockEditing = true;
         int pos = adapter.positionOf(key);   // beginReorder can rebuild the tiles
         int n = adapter.movableCount();
@@ -1625,7 +1641,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             dockEditSlot = pos;
             dimOthers();
             focusTile(Math.min(COLUMNS, n - 1));
-            Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
+            // apps_screen: the "Choose an app" title over the grid says it.
+            if (!appsScreen) Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
         } else {
             dockEditAppKey = key;
             focusTile(0);
@@ -1672,6 +1689,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** A tile's alpha: the carried tile stays bright; every other tile is dim while reordering, including after a
      * drop, until Back ends the mode. In edit-dock mode, dock tiles other than the chosen place are dimmed. */
     private float tileAlpha(int pos) {
+        // apps_screen: nothing dims while moving a pinned app or choosing one; only the pinned places other than the
+        // one being replaced step back.
+        if (appsScreen) return dockEditSlot >= 0 && pos >= 0 && pos < COLUMNS && pos != dockEditSlot ? 0.45f : 1f;
         if (movingKey != null) {
             return pos != RecyclerView.NO_POSITION && movingKey.equals(adapter.keyAt(pos)) ? 1f : 0.45f;
         }
@@ -1712,7 +1732,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         // the empty dock slots left out while reordering come back; apps_screen: Home goes back to the pinned row
-        if (fillDockLeavesSlots || appsScreen) reloadTiles();
+        boolean wasAll = showingAll;
+        showingAll = false;
+        adapter.setShowAll(false);
+        updatePickTitle();
+        if (fillDockLeavesSlots || wasAll) reloadTiles();
     }
 
     /**
@@ -2339,6 +2363,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The room the Continue watching row takes between the dock and the second grid row; 0 while it is empty. */
     private int continueGap() {
+        if (showingAll && pickTitle != null) {
+            // Choosing an app for a pinned place: the title takes the row's room, with the grid's own row spacing
+            // above it and a smaller gap under it, so the grid does not crowd it.
+            pickTitle.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            return (int) (PICK_TITLE_TOP_DP * density) + pickTitle.getMeasuredHeight() + (int) (16 * density);
+        }
         if (continueRow == null || !continueRow.hasItems()) return 0;
         if (continueRowHeight == 0) {
             // Unspecified both ways: the height does not depend on the width, and root may not be laid out yet.
@@ -2366,6 +2397,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             continueRow.setFits(false);
             return;
         }
+        if (showingAll && pickTitle != null) {
+            continueRow.setFits(false);
+            FrameLayout.LayoutParams tlp = (FrameLayout.LayoutParams) pickTitle.getLayoutParams();
+            int titleTop = Math.round(y + PICK_TITLE_TOP_DP * density);
+            if (tlp.topMargin != titleTop) {
+                tlp.topMargin = titleTop;
+                pickTitle.setLayoutParams(tlp);
+            }
+            return;
+        }
         // A layout margin, not setY: the focus finder works from layout positions, so a row moved by translation
         // alone was found at the top of the screen, beside the header buttons, and took their Right and Up.
         FrameLayout.LayoutParams rowLp = (FrameLayout.LayoutParams) continueRow.getLayoutParams();
@@ -2378,6 +2419,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Rect a = new Rect(0, 0, anchor.getWidth(), anchor.getHeight());
         root.offsetDescendantRectToMyCoords(anchor, a);
         continueRow.setFits(y >= a.bottom);
+    }
+
+    private static final int PICK_TITLE_TOP_DP = 32;
+    /** apps_screen: "Choose an app" over the grid while every app is on Home for a pinned place. */
+    private TextView pickTitle;
+
+    /** Shows the pick title and hides Continue watching while every app is on Home, and the reverse after. */
+    private void updatePickTitle() {
+        if (continueRow == null) return;
+        if (pickTitle == null && showingAll) {
+            pickTitle = new TextView(this);
+            pickTitle.setText(R.string.pick_app_title);
+            pickTitle.setTextColor(0xFFFFFFFF);
+            pickTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            pickTitle.setTypeface(UiFont.get(this, R.string.font_medium));
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginStart((int) (68 * density));
+            root.addView(pickTitle, root.indexOfChild(glass), lp);
+        }
+        if (pickTitle != null) pickTitle.setVisibility(showingAll ? View.VISIBLE : View.GONE);
+        if (!showingAll) placeContinueRowAgain();
+        grid.invalidateItemDecorations();
+        grid.post(this::placeContinueRow);
+    }
+
+    /** After the pick: the row is wanted again and finds its place on the next layout. */
+    private void placeContinueRowAgain() {
+        continueRow.setFits(true);
     }
 
     /** Up from the second grid row: scroll the row back on screen first, then focus it. */
@@ -2643,7 +2713,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return false;
             }
             // Second row: the Continue watching row sits between it and the dock.
-            if (position < 2 * COLUMNS && focusContinueRowFromGrid()) {
+            if (position < 2 * COLUMNS && !showingAll && focusContinueRowFromGrid()) {
                 grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
                 return true;
             }
@@ -3230,6 +3300,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean settingsPillMenu;
     /** config.xml apps_screen: Home shows only the pinned row (and Continue watching); the Apps screen has the rest. */
     private boolean appsScreen;
+    /** apps_screen: every app is on Home for the current pinned-place choice. */
+    private boolean showingAll;
     /** icon_only_buttons without wifi_label_width: the Wi-Fi pill shows no network name. */
     private boolean wifiIconOnly;
     /** config.xml wifi_status_color: the Wi-Fi icon's green while online and its usual pill colours; null while off. */
@@ -3923,7 +3995,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (moduleCards) addSettingsMenuRow(rows, popup, R.string.module_cards, this::showModuleCards);
         if (dockRow) addSettingsMenuRow(rows, popup, R.string.dock_edit, this::startDockEdit);
-        addSettingsMenuRow(rows, popup, R.string.reorder, this::toggleReorder);
+        // apps_screen: reordering lives on the Apps screen (hold OK on an app there).
+        if (!appsScreen) addSettingsMenuRow(rows, popup, R.string.reorder, this::toggleReorder);
         // A launcher may not restart the TV itself; the Home key helper can open the system power menu instead.
         if (HomeKeyService.canOpenPowerMenu()) addSettingsMenuRow(rows, popup, R.string.power_menu, HomeKeyService::openPowerMenu);
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
@@ -4049,7 +4122,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (at < 0) return;
             focusTile(at);
             pickUp(at);
-            Toast.makeText(this, R.string.reorder_hint, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, appsScreen ? R.string.apps_move_hint : R.string.reorder_hint, Toast.LENGTH_LONG).show();
         });
         if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);

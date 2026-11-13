@@ -10,6 +10,7 @@ import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -84,6 +85,16 @@ public final class LauncherSettingsActivity extends Activity {
         boolean appsScreen = getResources().getBoolean(R.bool.apps_screen);
         findViewById(R.id.appsColumnsLabel).setVisibility(appsScreen ? View.VISIBLE : View.GONE);
         findViewById(R.id.appsColumnsRow).setVisibility(appsScreen ? View.VISIBLE : View.GONE);
+        if (appsScreen) {
+            // Home holds only the pinned row: "Apps per row" sets how many apps are pinned, and the rows below it and
+            // its band's opacity have nothing to act on.
+            hideChoiceRow(R.id.rows0);
+            hideChoiceRow(R.id.dock100);
+            View columnsRow = (View) findViewById(R.id.columns4).getParent();
+            ViewGroup list = (ViewGroup) columnsRow.getParent();
+            View columnsLabel = list.getChildAt(list.indexOfChild(columnsRow) - 1);
+            if (columnsLabel instanceof TextView) ((TextView) columnsLabel).setText(R.string.pinned_count_label);
+        }
         int[] appsIds = {R.id.appsColumns4, R.id.appsColumns5, R.id.appsColumns6, R.id.appsColumns7};
         for (int i = 0; i < appsIds.length; i++) {
             final int value = i + 4;
@@ -308,6 +319,15 @@ public final class LauncherSettingsActivity extends Activity {
         choices.edit().putBoolean("advanced_effects", enabled).apply();
         changed();
         refresh();
+    }
+
+    /** Hides a row of choices (the row holding this view) and its label above it. */
+    private void hideChoiceRow(int choiceId) {
+        View row = (View) findViewById(choiceId).getParent();
+        ViewGroup list = (ViewGroup) row.getParent();
+        int at = list.indexOfChild(row);
+        row.setVisibility(View.GONE);
+        if (at > 0) list.getChildAt(at - 1).setVisibility(View.GONE);
     }
 
     private void refresh() {
