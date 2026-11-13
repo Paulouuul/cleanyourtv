@@ -319,10 +319,14 @@ final class ContinueRow extends LinearLayout {
                     v.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
                     host.onRowDown();
                     return true;
+                // Move to the neighbouring card ourselves: left to Android's focus search, Right from a middle card
+                // sometimes landed on a top-bar pill above the row (TCL 32S5K, G13). The ends stay put.
                 case KeyEvent.KEYCODE_DPAD_LEFT:
-                    return index == 0;                        // the row's start: stay put
+                    if (index > 0) cardViews.get(index - 1).requestFocus();
+                    return true;
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
-                    return index == cardViews.size() - 1;     // the row's end: stay put
+                    if (index < cardViews.size() - 1) cardViews.get(index + 1).requestFocus();
+                    return true;
                 default:
                     return false;
             }
