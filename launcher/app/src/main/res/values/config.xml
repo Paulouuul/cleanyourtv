@@ -282,7 +282,7 @@
     <bool name="lunar_date">false</bool>
     <!-- The date (with the Shamsi and lunar lines) on its own line under the clock instead of beside it, for a top bar
          whose pills leave the date too little room. Can also be set with "date_below_clock" in a theme. -->
-    <bool name="date_below_clock">false</bool>
+    <bool name="date_below_clock">true</bool>
     <!-- The language the launcher shows itself in, as a language tag ("vi", "pt-BR", "ar-EG-u-nu-latn"
          for Arabic with Western digits), instead of the TV's. For firmware
          that has no menu entry for the owner's language although the launcher is translated into it (a China-market
@@ -318,6 +318,15 @@
     <!-- A direct Launcher settings action instead of TV Settings in the header (or top_menu).
          Off by default; a theme can set "launcher_settings_button": true. -->
     <bool name="launcher_settings_button">false</bool>
+    <!-- A click on the header Settings pill opens its menu (TV settings first, then Launcher settings, Edit dock,
+         Reorder apps...) instead of the TV's Settings; holding OK still opens the same menu. Off by default; ignored
+         with launcher_settings_button. On for the TCL 32S5K in this home. -->
+    <bool name="settings_pill_menu">true</bool>
+    <!-- Home keeps only the pinned row (the dock) and Continue watching; every app is on an Apps screen of its own,
+         opened from the round apps button in the top bar, with its apps per row a Launcher settings choice (4 by
+         default). Move and Edit pinned still show every app on Home while they run. Off by default. On for the TCL
+         32S5K in this home. -->
+    <bool name="apps_screen">true</bool>
     <!-- The dock band as light frosted glass, like the Inputs, Wi-Fi and Settings pills, so a sky or wallpaper shows
          through it. false (the default) keeps the solid near-black band, or the cinematic shelf's dark glass. Can
          also be set with "dock_glass": true in a theme's config.json. -->
@@ -340,9 +349,9 @@
     <bool name="reorder_button">false</bool>
     <!-- Wi-Fi and Settings as round icon-only buttons (the network name moves to the talkback description);
          Inputs keeps its label. -->
-    <bool name="icon_only_buttons">false</bool>
+    <bool name="icon_only_buttons">true</bool>
     <!-- The Inputs pill as a round icon button too (the label moves to the talkback description). -->
-    <bool name="icon_only_inputs">false</bool>
+    <bool name="icon_only_inputs">true</bool>
     <!-- With vpn_pill, the VPN pill as a round icon button too: an open lock on the plain glass button while no VPN is
          up, the closed lock in a green outline while one is (solid green only while focused, like the pill). "VPN" /
          "VPN off" become its talkback description. A theme can set "icon_only_vpn": true. -->
@@ -414,7 +423,7 @@
 
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
-    <integer name="rows_below_dock">1</integer>
+    <integer name="rows_below_dock">0</integer>
 
     <!-- The focused dock app's name in large type above the dock. false keeps only the glow, which leaves room
          for bigger tiles when rows_below_dock is 2 or 3. -->
@@ -529,7 +538,7 @@
     <!-- The glow behind the dock in the focused app's colour (red for YouTube, blue for Prime Video). false keeps
          only background_color or the wallpaper behind everything. Can also be set with "ambient_glow": false in a
          theme's config.json. -->
-    <bool name="ambient_glow">true</bool>
+    <bool name="ambient_glow">false</bool>
     <!-- true: when the focus moves to an app of another colour, the ambient glow takes the new colour in one frame
          instead of dimming and fading back in. Each frame of that fade repaints the whole screen, about 40 per key
          press, which a slow GPU such as the Mali-G52 cannot keep up with. Can also be set with "glow_snap" in a
@@ -559,7 +568,7 @@
     <!-- The clock screensaver's slow coloured glow behind the clock. false leaves the clock and date alone on plain black
          (OLED panels); they still move every minute. Ignored while clock_wallpaper shows a picture. Can also be set
          with "clock_glow" in a theme. -->
-    <bool name="clock_glow">true</bool>
+    <bool name="clock_glow">false</bool>
     <!-- Shape of the glow behind the focused app, in its colour: radial (a soft glow, the default) or horizon (the
          colour washes down from the top edge and fades to black, brightest along the top). The cinematic shelf
          keeps its own glow. Can also be set with "glow_style": "horizon" in a theme's config.json. -->
@@ -567,7 +576,7 @@
     <!-- The focus highlight's look: glass (the default: a translucent slab with a bright top sheen, a crisp rim and a
          faint outer glow), rim (the crisp rim alone, no sheen, fill or glow, for a quiet focus over a wallpaper) or
          halo (the rim with a lighter outer glow). Can also be set with "glass_style": "rim" in a theme's config.json. -->
-    <string name="glass_style" translatable="false">glass</string>
+    <string name="glass_style" translatable="false">rim</string>
 
     <!-- Tiles drawn from the app's icon and name instead of its banner (for banners that crop badly). -->
     <string-array name="icon_tiles" translatable="false">

@@ -44,11 +44,8 @@ public final class QuickSettingsActivity extends Activity {
         addRow(rows, R.drawable.ic_picture, R.string.quick_picture, 0, SystemSettings.displayIntent(this));
         addRow(rows, R.drawable.ic_sound, R.string.quick_sound, 0, SystemSettings.soundIntent(this));
         addRow(rows, R.drawable.ic_wifi, R.string.quick_network, 0, SystemSettings.intent(this, Settings.ACTION_WIFI_SETTINGS));
-        addRow(rows, R.drawable.ic_apps, R.string.quick_apps, R.string.quick_apps_hint,
-                SystemSettings.intent(this, Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS));
-        // Through Home, so it rebuilds with the new choices when Launcher settings closes.
-        addRow(rows, R.drawable.ic_home_settings, R.string.launcher_settings, 0,
-                new Intent(this, MainActivity.class).setAction(MainActivity.ACTION_LAUNCHER_SETTINGS));
+        // Apps and Launcher settings left this panel: it is for the TV's own settings over the app in front, and
+        // Launcher settings lives in the Home screen's Settings menu (settings_pill_menu).
         rows.getChildAt(0).requestFocus();
     }
 

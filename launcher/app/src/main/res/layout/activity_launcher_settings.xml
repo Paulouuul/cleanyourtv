@@ -48,6 +48,31 @@
             <TextView android:id="@+id/columns7" style="@style/SettingsColumnChoice" android:text="7" />
         </LinearLayout>
 
+        <!-- apps_screen: apps per row on the Apps screen; hidden unless apps_screen is on. -->
+        <TextView
+            android:id="@+id/appsColumnsLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/apps_screen_columns_label"
+            android:textColor="#FFFFFFFF"
+            android:textSize="20sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/appsColumnsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView android:id="@+id/appsColumns4" style="@style/SettingsColumnChoice" android:text="4" />
+            <TextView android:id="@+id/appsColumns5" style="@style/SettingsColumnChoice" android:text="5" />
+            <TextView android:id="@+id/appsColumns6" style="@style/SettingsColumnChoice" android:text="6" />
+            <TextView android:id="@+id/appsColumns7" style="@style/SettingsColumnChoice" android:text="7" />
+        </LinearLayout>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

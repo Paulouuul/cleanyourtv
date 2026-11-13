@@ -40,6 +40,9 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView followThemeChoice;
     private TextView openOnStartChoice;
     private int columns;
+    /** apps_screen: apps per row on the Apps screen (AppsActivity.APPS_COLUMNS_KEY). */
+    private int appsColumns;
+    private final TextView[] appsColumnChoices = new TextView[4];
     private int rowsBelowDock;
     private int dockOpacity;
     private String clockFormat;
@@ -74,6 +77,21 @@ public final class LauncherSettingsActivity extends Activity {
                 columns = value;
                 choices.edit().putInt("columns", value).apply();
                 changed();
+                refresh();
+            });
+        }
+        appsColumns = choices.getInt(AppsActivity.APPS_COLUMNS_KEY, AppsActivity.DEFAULT_COLUMNS);
+        boolean appsScreen = getResources().getBoolean(R.bool.apps_screen);
+        findViewById(R.id.appsColumnsLabel).setVisibility(appsScreen ? View.VISIBLE : View.GONE);
+        findViewById(R.id.appsColumnsRow).setVisibility(appsScreen ? View.VISIBLE : View.GONE);
+        int[] appsIds = {R.id.appsColumns4, R.id.appsColumns5, R.id.appsColumns6, R.id.appsColumns7};
+        for (int i = 0; i < appsIds.length; i++) {
+            final int value = i + 4;
+            appsColumnChoices[i] = findViewById(appsIds[i]);
+            appsColumnChoices[i].setOnClickListener(v -> {
+                if (appsColumns == value) return;
+                appsColumns = value;
+                choices.edit().putInt(AppsActivity.APPS_COLUMNS_KEY, value).apply();
                 refresh();
             });
         }
@@ -295,6 +313,9 @@ public final class LauncherSettingsActivity extends Activity {
     private void refresh() {
         for (int i = 0; i < columnChoices.length; i++) {
             columnChoices[i].setSelected(columns == i + 4);
+        }
+        for (int i = 0; i < appsColumnChoices.length; i++) {
+            appsColumnChoices[i].setSelected(appsColumns == i + 4);
         }
         for (int i = 0; i < rowChoices.length; i++) {
             rowChoices[i].setSelected(rowsBelowDock == i);

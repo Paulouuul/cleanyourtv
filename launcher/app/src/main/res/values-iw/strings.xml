@@ -50,6 +50,8 @@
     <string name="launcher_settings">הגדרות מסך הבית</string>
     <string name="native_settings">הגדרות היצרן</string>
     <string name="columns_label">אפליקציות בשורה</string>
+    <string name="apps_screen">אפליקציות</string>
+    <string name="apps_screen_columns_label">אפליקציות בכל שורה במסך האפליקציות</string>
     <string name="dock_opacity_label">עוצמת הרקע בשורת המועדפים</string>
     <string name="animations_state">הנפשות: %1$s</string>
     <string name="advanced_effects">אפקטים מתקדמים</string>
@@ -88,6 +90,7 @@
     <string name="quick_picture">תצוגה</string>
     <string name="quick_network">רשת</string>
     <string name="quick_apps">אפליקציות</string>
+    <string name="quick_sound">צליל</string>
     <string name="quick_apps_hint">הפעלת אפליקציות שהושבתו</string>
     <string name="dock_edit">עריכת שורת המועדפים</string>
     <string name="power_menu">הפעלה מחדש…</string>

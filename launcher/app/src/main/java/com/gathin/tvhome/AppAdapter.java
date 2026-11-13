@@ -340,10 +340,20 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             fresh.add(docked + i, new Entry(Entry.EMPTY, "", new ComponentName(ctx, "empty-dock-slot-" + i),
                     null, null, null, 0));
         }
+        // apps_screen: Home keeps the pinned row only; the Apps screen lists the rest. Reorder and Edit pinned need
+        // every app to pick from, so the full list stays while they run.
+        if (homeLimit > 0 && !reordering && fresh.size() > homeLimit) fresh = new ArrayList<>(fresh.subList(0, homeLimit));
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
     }
+
+    /** apps_screen: how many tiles Home shows (the pinned row), 0 for all of them. Takes effect on the next reload. */
+    void setHomeLimit(int limit) {
+        homeLimit = limit;
+    }
+
+    private int homeLimit;
 
     /** icon_tiles: the app's icon centred on a dark banner-shaped tile, for apps whose own banner crops badly. */
     private Drawable iconBanner(Drawable icon) {

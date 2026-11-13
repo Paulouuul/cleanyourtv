@@ -92,8 +92,9 @@ final class ContinueRow extends LinearLayout {
         cards.setClipChildren(false);
         cards.setClipToPadding(false);
         // Room for the focused card's zoom on every side, so the scroller does not clip it.
+        // Bottom only as much as the 1.08 zoom needs, so the next grid row follows the cards closely.
         int pad = dp(12);
-        cards.setPadding(pad, pad, pad, pad);
+        cards.setPadding(pad, pad, pad, dp(4));
         scroller.addView(cards, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         addView(scroller, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
@@ -239,9 +240,9 @@ final class ContinueRow extends LinearLayout {
         card.addView(art, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         View scrim = new View(ctx);
-        scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
-                new int[]{0xE6000000, 0x00000000}));
-        card.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(60), Gravity.BOTTOM));
+        // Flat: a solid band under the text instead of a gradient (TCL 32S5K build).
+        scrim.setBackgroundColor(0xCC111216);
+        card.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46), Gravity.BOTTOM));
 
         LinearLayout text = new LinearLayout(ctx);
         text.setOrientation(VERTICAL);
@@ -265,7 +266,6 @@ final class ContinueRow extends LinearLayout {
                 }
             });
             badge.setClipToOutline(true);
-            badge.setElevation(dp(2));
             FrameLayout.LayoutParams ilp = new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.TOP | Gravity.START);
             ilp.setMargins(dp(8), dp(8), 0, 0);
             card.addView(badge, ilp);
@@ -296,7 +296,6 @@ final class ContinueRow extends LinearLayout {
         card.setOnFocusChangeListener((v, focused) -> {
             v.animate().cancel();
             v.animate().scaleX(focused ? FOCUS_SCALE : 1f).scaleY(focused ? FOCUS_SCALE : 1f).setDuration(150).start();
-            v.setElevation(focused ? dp(8) : 0);
             card.setForeground(focused ? ring : null);
             // A stray focus also lands here; strayFocus has already queued the move back to the dock, which puts
             // the glass and the title back.

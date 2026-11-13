@@ -52,6 +52,8 @@
     <string name="launcher_settings">Launcher settings</string>
     <string name="native_settings">Native settings</string>
     <string name="columns_label">Apps per row</string>
+    <string name="apps_screen">Apps</string>
+    <string name="apps_screen_columns_label">Apps per row on the Apps screen</string>
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>

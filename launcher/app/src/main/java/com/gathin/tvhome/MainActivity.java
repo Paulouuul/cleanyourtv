@@ -705,6 +705,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         fillDockLeavesSlots = !cfg.fillDock;
         Order savedOrder = Order.load(Order.file(this));
         adapter.setSavedOrder(Order.ranks(savedOrder, dockApps), Order.docked(savedOrder, dockApps));
+        appsScreen = getResources().getBoolean(R.bool.apps_screen) && dockRow && !singleRow;
+        if (appsScreen) adapter.setHomeLimit(COLUMNS);   // Home keeps the pinned row; the rest is on the Apps screen
         grid.setAdapter(adapter);
         setUpContinueRow();
 
@@ -722,7 +724,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Keep the hero below the header when the library is enabled on a short screen,
             // even when the theme requests an extra visible row below the dock.
             int shelfClearance = cfg.appLibrary ? hero.getMeasuredHeight() + (int) (40 * density) : 0;
-            int want = Math.max(shelfClearance, h - dockRow - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
+            // The Continue watching row sits between the dock and the grid rows, so the dock parks higher by its height.
+            int want = Math.max(shelfClearance,
+                    h - dockRow - continueGap() - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
             // Where the rows cannot fit even at the smallest tile (3 rows with the title on), the title keeps its
             // room above the dock and the last rows run off the bottom instead of the title drawing over the clock.
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
@@ -838,9 +842,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ((TextView) btnSettings).setText(R.string.launcher_settings);
             ((TextView) btnSettings).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_home_settings_pill, 0, 0, 0);
         }
+        settingsPillMenu = getResources().getBoolean(R.bool.settings_pill_menu);
         btnSettings.setOnClickListener(v -> {
             if (launcherSettingsButton) startActivityForResult(
                     new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+            else if (settingsPillMenu) showSettingsMenu();
             else open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
@@ -855,6 +861,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
+        if (getResources().getBoolean(R.bool.apps_screen)) {
+            // apps_screen: the round apps button opens the Apps screen, the grid of every app.
+            btnLibraryTop.setVisibility(View.VISIBLE);
+            btnLibraryTop.setContentDescription(getString(R.string.apps_screen));
+            btnLibraryTop.setOnClickListener(v -> startActivity(new Intent(this, AppsActivity.class)));
+        }
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
@@ -1526,7 +1538,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dockedAtStart = adapter.dockFilled();
         for (int i = 0; i < Math.min(dockedAtStart, adapter.movableCount()); i++) dockInSession.add(adapter.keyAt(i));
         adapter.setReordering(true);
-        if (adapter.hasEmptySlots()) reloadTiles();   // every position must hold a tile that can move
+        // every position must hold a tile that can move; apps_screen: bring back the apps Home leaves off
+        if (adapter.hasEmptySlots() || appsScreen) reloadTiles();
         reordering = true;
         orderAtStart = adapter.movableKeys();
         glass.setAccent(REORDER_ACCENT);
@@ -1698,7 +1711,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 Toast.makeText(this, R.string.reorder_not_saved, Toast.LENGTH_SHORT).show();
             }
         }
-        if (fillDockLeavesSlots) reloadTiles();   // the empty dock slots left out while reordering come back
+        // the empty dock slots left out while reordering come back; apps_screen: Home goes back to the pinned row
+        if (fillDockLeavesSlots || appsScreen) reloadTiles();
     }
 
     /**
@@ -1814,10 +1828,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
-        if (continueRow != null) {
-            continueRow.setWanted(position < COLUMNS);
-            updateTopBarDown();
-        }
         lastFocusedKey = adapter.keyAt(position);
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
         // would be sized to 2*pad. Run again once the tile is laid out.
@@ -2273,12 +2283,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 hideHero();
             }
 
+            // The row sits between the dock and the second grid row: Up goes back to the dock, Down on to the grid.
             @Override public void onRowUp() {
-                firstTopButton().requestFocus();
+                focusTile(lastFocused < COLUMNS ? lastFocused : 0);
             }
 
             @Override public void onRowDown() {
-                focusTile(lastFocused < COLUMNS ? lastFocused : 0);
+                int count = adapter.getItemCount();
+                if (count > COLUMNS) focusTile(COLUMNS + Math.min(lastFocused % COLUMNS, count - COLUMNS - 1));
+                // Nothing below the row (apps_screen): Down stays on it.
             }
 
             @Override public boolean inTopBar(View view) {
@@ -2304,21 +2317,81 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMarginStart((int) (56 * density));
         root.addView(continueRow, root.indexOfChild(glass), lp);
-        // Under the clock block, and only where it clears the dock's title: on a screen too short for both, the
-        // row stays hidden rather than drawing over the title.
-        root.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            View anchor = stats.getVisibility() == View.VISIBLE ? stats : findViewById(R.id.leftBlock);
-            Rect a = new Rect(0, 0, anchor.getWidth(), anchor.getHeight());
-            root.offsetDescendantRectToMyCoords(anchor, a);
-            float y = a.bottom + 8 * density;
-            if (continueRow.getY() != y) continueRow.setY(y);
-            Rect g = new Rect(0, 0, grid.getWidth(), grid.getHeight());
-            root.offsetDescendantRectToMyCoords(grid, g);
-            float dockTop = g.top + grid.getPaddingTop();
-            float rowBottom = y + (13 + 6 + 12 + ContinueRow.CARD_H_DP + 12) * density;
-            float heroTop = dockTop - 40 * density - hero.getHeight();
-            continueRow.setFits(rowBottom <= heroTop);
+        // Between the dock and the second grid row: the second row is pushed down by the row's height, and the row
+        // follows the grid as it scrolls. It hides once it would slide up under the clock block.
+        continueRow.setWanted(true);
+        grid.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent,
+                                       @NonNull RecyclerView.State state) {
+                int pos = parent.getChildAdapterPosition(view);
+                if (pos >= COLUMNS && pos < 2 * COLUMNS) outRect.top += continueGap();
+            }
         });
+        grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                placeContinueRow();
+            }
+        });
+        grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> placeContinueRow());
+        root.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> placeContinueRow());
+    }
+
+    /** The room the Continue watching row takes between the dock and the second grid row; 0 while it is empty. */
+    private int continueGap() {
+        if (continueRow == null || !continueRow.hasItems()) return 0;
+        if (continueRowHeight == 0) {
+            // Unspecified both ways: the height does not depend on the width, and root may not be laid out yet.
+            continueRow.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            continueRowHeight = continueRow.getMeasuredHeight();
+        }
+        return continueRowHeight;
+    }
+
+    private int continueRowHeight;
+
+    /** Puts the row in the gap under the dock, wherever the grid has scrolled to. */
+    private void placeContinueRow() {
+        if (continueRow == null) return;
+        GridLayoutManager lm = (GridLayoutManager) grid.getLayoutManager();
+        Rect g = new Rect(0, 0, grid.getWidth(), grid.getHeight());
+        root.offsetDescendantRectToMyCoords(grid, g);
+        View second = lm.findViewByPosition(COLUMNS);
+        View dock = lm.findViewByPosition(0);
+        float y;
+        if (second != null) y = g.top + lm.getDecoratedTop(second);
+        else if (dock != null) y = g.top + lm.getDecoratedBottom(dock);
+        else {
+            continueRow.setFits(false);
+            return;
+        }
+        // A layout margin, not setY: the focus finder works from layout positions, so a row moved by translation
+        // alone was found at the top of the screen, beside the header buttons, and took their Right and Up.
+        FrameLayout.LayoutParams rowLp = (FrameLayout.LayoutParams) continueRow.getLayoutParams();
+        int top = Math.round(y);
+        if (rowLp.topMargin != top) {
+            rowLp.topMargin = top;
+            continueRow.setLayoutParams(rowLp);
+        }
+        View anchor = stats.getVisibility() == View.VISIBLE ? stats : findViewById(R.id.leftBlock);
+        Rect a = new Rect(0, 0, anchor.getWidth(), anchor.getHeight());
+        root.offsetDescendantRectToMyCoords(anchor, a);
+        continueRow.setFits(y >= a.bottom);
+    }
+
+    /** Up from the second grid row: scroll the row back on screen first, then focus it. */
+    private boolean focusContinueRowFromGrid() {
+        if (continueRow == null || !continueRow.hasItems()) return false;
+        // Back to the resting layout, the dock parked on its line with the row and the second grid row under it,
+        // as when the dock has focus: scrolling only far enough for the row left the dock cut under the header.
+        ((GridLayoutManager) grid.getLayoutManager()).scrollToPositionWithOffset(0, 0);
+        grid.post(() -> {
+            placeContinueRow();
+            if (continueRow.isShowing()) continueRow.focusCard();
+            else focusTile(lastFocused < COLUMNS ? lastFocused : 0);
+        });
+        return true;
     }
 
     /** Once per resume, off the main thread: a provider query and a few local posters. No polling. */
@@ -2330,7 +2403,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             handler.post(() -> {
                 if (continueRow == null || isFinishing() || isDestroyed()) return;
                 continueRow.setItems(items);
-                updateTopBarDown();
+                grid.invalidateItemDecorations();
+                grid.post(this::placeContinueRow);
             });
             // Then the posters, each swapped in as it arrives: the row does not wait for the slowest one.
             for (ContinueWatching.Item item : items) {
@@ -2342,14 +2416,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }, "continue-watching").start();
     }
 
-    /** The top bar's Down goes to the row while it is on screen, to the grid otherwise. */
-    private void updateTopBarDown() {
-        int target = continueRow == null ? View.NO_ID : continueRow.firstCardId();
-        ViewGroup bar = findViewById(R.id.topButtons);
-        for (int i = 0; i < bar.getChildCount(); i++) {
-            bar.getChildAt(i).setNextFocusDownId(target != View.NO_ID ? target : R.id.grid);
-        }
-    }
 
     // ---- optional system stats (config.xml show_stats) --------------------------------------------
 
@@ -2562,14 +2628,32 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-            if (position < COLUMNS) {                      // dock row: the Continue watching row, else the top bar
-                if (continueRow == null || !continueRow.isShowing()) return false;
-                continueRow.focusCard();
+            if (position < COLUMNS) {                      // dock row: the top bar
+                if (continueRow == null) return false;
+                // The row is placed with setY, which the focus finder ignores: it would find the row's cards at their
+                // layout position, the top of the screen, and take Up into the row. Search without it.
+                View current = grid.findFocus();
+                continueRow.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+                View next = current != null ? current.focusSearch(View.FOCUS_UP) : null;
+                continueRow.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                if (next != null && next.requestFocus()) {
+                    grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+                    return true;
+                }
+                return false;
+            }
+            // Second row: the Continue watching row sits between it and the dock.
+            if (position < 2 * COLUMNS && focusContinueRowFromGrid()) {
                 grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
                 return true;
             }
             target = position - COLUMNS;
         } else {
+            if (position < COLUMNS && continueRow != null && continueRow.isShowing()) {
+                continueRow.focusCard();
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
+                return true;
+            }
             int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
             if (position >= lastRowStart) {
                 if (adapter.isLibraryAt(count)) focusLibrary();
@@ -2586,7 +2670,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override public void onLibraryFocused() {
         libraryFocusPending = false;
-        if (continueRow != null) continueRow.setWanted(false);
         hideGlass();
         hideHero();
     }
@@ -3143,6 +3226,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** show_inputs_pill as configured: top_menu clears showInputsPill, so its Inputs row reads this. */
     private boolean showInputsMenuRow = true;
     private boolean launcherSettingsButton;
+    /** config.xml settings_pill_menu: the Settings pill's click opens its menu (TV settings, Launcher settings, ...). */
+    private boolean settingsPillMenu;
+    /** config.xml apps_screen: Home shows only the pinned row (and Continue watching); the Apps screen has the rest. */
+    private boolean appsScreen;
     /** icon_only_buttons without wifi_label_width: the Wi-Fi pill shows no network name. */
     private boolean wifiIconOnly;
     /** config.xml wifi_status_color: the Wi-Fi icon's green while online and its usual pill colours; null while off. */
@@ -3820,6 +3907,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
+        // settings_pill_menu: a click opens this menu, so the TV's own Settings comes first.
+        if (settingsPillMenu && !launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.tv_settings,
+                () -> open(systemIntent(Settings.ACTION_SETTINGS)));
         if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, () -> startActivityForResult(
                 new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         // Firmware that ships its own settings app next to the AOSP one (Xiaomi China is one): the
