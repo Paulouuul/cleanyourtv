@@ -17,10 +17,13 @@
 
     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
     <string-array name="dock_apps">
-        <item>com.netflix.ninja</item>
-        <item>com.amazon.amazonvideo.livingroom</item>
         <item>com.google.android.youtube.tv</item>
-        <item>in.startv.hotstar</item>
+        <item>com.crunchyroll.crunchyroid</item>
+        <item>com.google.android.youtube.tvmusic</item>
+        <item>com.google.android.videos</item>
+        <item>com.android.vending</item>
+        <item>com.vectorunit.purple.googleplay</item>
+        <item>com.google.android.play.games</item>
     </string-array>
     <!-- With fewer dock_apps than columns (or a dock app that is not installed), the free dock slots take
          the first grid apps, so the dock never shows a gap. false leaves them empty (#162); a theme can
@@ -149,7 +152,7 @@
          once, a press or hold within those 4 s repeats as usual, and the remote buttons below work again once the
          pause ends. With gamepad_passthrough on too, filtering stays off while a gamepad is connected. A theme can
          set it ("volume_pauses_filter"). -->
-    <bool name="volume_pauses_filter">false</bool>
+    <bool name="volume_pauses_filter">true</bool>
 
     <!-- true: Channel Up/Down do nothing while Home is in front. Unhandled, they open the TV's Live TV app (Sony
          BRAVIA, Android 9: com.sony.dtv.tvx), which is a stray press on a set nobody watches broadcast on. Inside any
@@ -182,11 +185,12 @@
          a temporary `Log.d` in the helper's `onKeyEvent`: `getKeyCode()`, `getScanCode()`, `getDeviceId()`, read
          after a HOME_KEY_SERVICE=1 rebuild. Leave empty to omit. -->
     <integer-array name="settings_key_keycodes">
+        <item>83</item>
     </integer-array>
     <!-- What those Settings buttons open: false, the TV's Settings; true, a small glass panel at the top right
          with TV settings, Display, Network, Apps (re-enable an app) and Launcher settings, over whatever is on screen.
          Both keys can also be set from a theme's config.json ("settings_key_keycodes": [83]). -->
-    <bool name="settings_key_panel">false</bool>
+    <bool name="settings_key_panel">true</bool>
     <!-- true: those Settings buttons clear the TV Settings task before opening Settings (with settings_key_panel off).
          On some MediaTek boards KEYCODE_SETTINGS is also a global key: com.mediatek.tv.service opens Display & Sound in
          the same task before the helper sees the press, so Settings stacked on it and Back landed there (Skyworth
@@ -410,15 +414,15 @@
 
     <!-- Grid rows left visible under the dock on the home screen. 0 = dock sits at the very bottom. Tiles shrink if
          the dock, its title and this many rows would not otherwise fit the screen height. -->
-    <integer name="rows_below_dock">0</integer>
+    <integer name="rows_below_dock">1</integer>
 
     <!-- The focused dock app's name in large type above the dock. false keeps only the glow, which leaves room
          for bigger tiles when rows_below_dock is 2 or 3. -->
-    <bool name="dock_title">true</bool>
+    <bool name="dock_title">false</bool>
 
     <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 180dp wide at 4 columns and
          shrink to fit from 5 up (about 144dp at 5, 117dp at 6 on a 1080p TV). -->
-    <integer name="columns">4</integer>
+    <integer name="columns">7</integer>
 
     <!-- Basic motion is on; advanced effects are opt-in in the launcher's own Settings screen. -->
     <bool name="animations">true</bool>
@@ -484,7 +488,7 @@
          local posters are shown (Jellyfin's, for one); rows whose poster is a web address get the app's own
          banner instead, so Home makes no network request. Hidden on a screen with no room above the dock.
          Off by default. -->
-    <bool name="continue_watching">false</bool>
+    <bool name="continue_watching">true</bool>
 
     <!-- Each team's next game in the F1 panel's place under the clock, rotating with the theme's F1 weekend: the package
          of an add-on that publishes them (the Game Day add-on: io.github.justinnewman.gameday; contract in docs/modules.md).
