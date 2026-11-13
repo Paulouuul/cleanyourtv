@@ -119,6 +119,7 @@
     <string name="tv_settings">Configurações do sistema da TV</string>
     <string name="quick_picture">Imagem</string>
     <string name="quick_network">Rede</string>
+    <string name="quick_sound">Som</string>
     <string name="quick_apps">Apps</string>
     <string name="quick_apps_hint">Reativar</string>
     <string name="on">Ativado</string>

@@ -76,4 +76,16 @@ final class SystemSettings {
         }
         return intent(context, Settings.ACTION_DISPLAY_SETTINGS);
     }
+
+    /**
+     * The TV's sound settings. ACTION_SOUND_SETTINGS has two handlers on TCL Google TV 14 (G13): SoundActivity,
+     * a side panel over the app in front, and DisplaySoundActivity, the full-screen page. Prefer the panel.
+     */
+    static Intent soundIntent(Context context) {
+        ComponentName panel = new ComponentName("com.android.tv.settings",
+                "com.android.tv.settings.device.sound.SoundActivity");
+        Intent i = new Intent(Settings.ACTION_SOUND_SETTINGS).setComponent(panel);
+        if (context.getPackageManager().resolveActivity(i, 0) != null) return i;
+        return intent(context, Settings.ACTION_SOUND_SETTINGS);
+    }
 }
