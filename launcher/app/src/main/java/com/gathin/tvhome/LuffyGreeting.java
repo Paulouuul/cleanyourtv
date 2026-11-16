@@ -229,6 +229,7 @@ final class LuffyGreeting {
     private void afterSpeech() {
         if (!speaking) return;
         speaking = false;
+        greeted = true;
         handler.removeCallbacksAndMessages(null);
         releaseVoice();
         typed = line.length();
@@ -239,6 +240,19 @@ final class LuffyGreeting {
                     bubble.setVisibility(View.INVISIBLE);
                     popLogo();
                 }).start(), BUBBLE_HOLD_MS);
+    }
+
+    /** Luffy has greeted once: from then on he idles in a loop while Home is in front. */
+    private boolean greeted;
+
+    /**
+     * Home back in front without a greeting (a panel over it closed, Google Home's for one): the idle loop that
+     * {@link #stop()} froze starts again, without the voice.
+     */
+    void resumeIdle() {
+        if (speaking || !greeted) return;
+        if (shown instanceof AnimatedImageDrawable && ((AnimatedImageDrawable) shown).isRunning()) return;
+        show(load(R.raw.luffy_idle, AnimatedImageDrawable.REPEAT_INFINITE), true);
     }
 
     /** Home left: the voice and the animation stop, Luffy stands still and the bubble goes. */

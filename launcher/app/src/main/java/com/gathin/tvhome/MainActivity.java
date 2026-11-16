@@ -125,6 +125,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * The quick panel is opening over Home itself: Home is in front, or paused just now to let the panel in. An app
      * still loading leaves Home started (homeVisible) until its first frame, but Home paused when that app was opened.
      */
+    /** When the remote's Home button was last pressed (HomeKeyService), SystemClock.uptimeMillis. */
+    private static volatile long homeKeyAt = -10_000L;
+
+    static void noteHomeKey() {
+        homeKeyAt = android.os.SystemClock.uptimeMillis();
+    }
+
     /** Home is in front right now: the Settings key, pressed now, opens the quick panel over Home itself. */
     static boolean homeInFront() {
         return homeResumed;
@@ -1164,7 +1171,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Still on screen (the quick panel was over it, or Home was already in front): the tiles are current,
             // so only go back to the first one; rebuilding would replay the entrance animation for nothing.
             grid.post(() -> focusTile(0));
-            if (luffy != null) luffy.play();   // Home pressed on Home: Luffy says his line again
+            // Home pressed on Home: Luffy says his line again. Not when Home is only now coming back (from HDMI or an
+            // app, onStart runs before this and has already cleared "stopped"): onResume greets then, and both played.
+            // Only for the remote's Home button: other apps send Home too (Google Home's panel), and Luffy spoke then.
+            boolean homeKey = android.os.SystemClock.uptimeMillis() - homeKeyAt < 2000L;
+            if (luffy != null && homeKey && !greetOnResume && intro == null) luffy.play();
         }
     }
 
@@ -1255,6 +1266,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // once Home has settled. The quick panel over Home never stopped it, so closing it does not.
             greetOnResume = false;
             handler.postDelayed(() -> { if (resumed && luffy != null) luffy.play(); }, 900);
+        } else if (luffy != null && intro == null) {
+            // Back in front with no greeting due (a panel over Home closed): Luffy's idle loop carries on.
+            luffy.resumeIdle();
         }
     }
 
