@@ -28,6 +28,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.util.TypedValue;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -124,7 +125,38 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** The same for either layout: the plain grid (dock_row false) uses the compact spacing. */
     static int itemHeightPx(int tileHeightPx, boolean dockRow, float density) {
+        if (dockRow && spacingScale(tileHeightPx, density) < 1f) {
+            int[] s = itemSpacingPx(tileHeightPx, density);
+            return tileHeightPx + 2 * s[0] + s[1] + s[2];
+        }
         return tileHeightPx + Math.round((dockRow ? ITEM_EXTRA_DP : COMPACT_ITEM_EXTRA_DP) * density);
+    }
+
+    /**
+     * apps_screen (MainActivity sets it): the room above and below a tile, the name under it and the dock's offsets
+     * shrink with the tile, so more pinned apps (smaller tiles) do not leave wide empty bands between the rows.
+     */
+    static boolean scaleSpacing;
+    /** One Piece skin: the tiles get a wooden frame, and opening an app plays its click. */
+    static boolean onePiece;
+
+    /** 1 at the design tile height or with scaleSpacing off; the tile's share of the design height below it. */
+    static float spacingScale(int tileHeightPx, float density) {
+        if (!scaleSpacing) return 1f;
+        return Math.max(0.5f, Math.min(1f, tileHeightPx / (DESIGN_H_DP * density)));
+    }
+
+    /** The item's padding (above and below), the gap over the name and the name's height, scaled (item_app.xml). */
+    static int[] itemSpacingPx(int tileHeightPx, float density) {
+        float s = spacingScale(tileHeightPx, density);
+        float n = Math.max(0.8f, s);   // the name stays readable: it shrinks less than the gaps
+        return new int[]{Math.round(8 * s * density), Math.round(7 * s * density), Math.round(22 * n * density)};
+    }
+
+    /** DockDecoration's offsets above and below the dock row, scaled like the item spacing. */
+    static int[] dockOffsetsPx(int tileHeightPx, float density) {
+        float s = spacingScale(tileHeightPx, density);
+        return new int[]{(int) (6 * s * density), (int) (12 * s * density)};
     }
 
     /**
@@ -446,6 +478,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             nameLp.height = Math.round(20 * density);
             int pad = Math.round(4 * density);
             v.setPadding(v.getPaddingLeft(), pad, v.getPaddingRight(), pad);
+        } else if (spacingScale(h, density) < 1f) {
+            // Smaller tiles, smaller gaps (scaleSpacing); itemHeightPx counts the same sizes.
+            int[] s = itemSpacingPx(h, density);
+            v.setPadding(v.getPaddingLeft(), s[0], v.getPaddingRight(), s[0]);
+            nameLp.topMargin = h + s[1];
+            nameLp.height = s[2];
+            ((TextView) name).setTextSize(TypedValue.COMPLEX_UNIT_SP, 14 * Math.max(0.8f, spacingScale(h, density)));
         }
         name.setLayoutParams(nameLp);
         // A sideways row would stretch a match_parent item across the whole screen: give it a grid column's width.
@@ -570,6 +609,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         try {
             ctx.startActivity(i);
+            if (onePiece) OnePieceSkin.clickOpen();
             if (cinematic) LastOpened.record(ctx, e.pkg);
             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
@@ -957,6 +997,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
             });
             card.setClipToOutline(true);
+            if (onePiece) card.setForeground(OnePieceSkin.woodFrame(density));
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;

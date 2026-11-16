@@ -160,4 +160,6 @@
     <string name="clock_format_12">12 horas</string>
     <string name="clock_format_24">24 horas</string>
     <string name="continue_watching">Continuar assistindo</string>
+    <!-- One Piece skin: the speech bubble of Luffy's greeting on Home. -->
+    <string name="onepiece_greeting">Meu nome é Monkey D. Luffy, e eu vou ser o Rei dos Piratas!</string>
 </resources>

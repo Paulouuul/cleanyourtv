@@ -38,6 +38,18 @@ public final class QuickSettingsActivity extends Activity {
             position.setMargins(inset, position.topMargin, 0, position.bottomMargin);
             panel.setLayoutParams(position);
         }
+        if (!MainActivity.homeVisible) {
+            // Over any other app there is no Settings pill to line up under: the panel sits in the corner, a small
+            // gap from the top and side edges of the screen.
+            View panel = findViewById(R.id.panel);
+            android.widget.FrameLayout.LayoutParams position =
+                    (android.widget.FrameLayout.LayoutParams) panel.getLayoutParams();
+            int gap = Math.round(16 * getResources().getDisplayMetrics().density);
+            position.setMargins(gap, gap, gap, position.bottomMargin);
+            position.setMarginStart(gap);
+            position.setMarginEnd(gap);
+            panel.setLayoutParams(position);
+        }
         findViewById(R.id.scrim).setOnClickListener(v -> finish());
         LinearLayout rows = findViewById(R.id.rows);
         addRow(rows, R.drawable.ic_settings, R.string.tv_settings, 0, SystemSettings.intent(this, Settings.ACTION_SETTINGS));
@@ -46,6 +58,12 @@ public final class QuickSettingsActivity extends Activity {
         addRow(rows, R.drawable.ic_wifi, R.string.quick_network, 0, SystemSettings.intent(this, Settings.ACTION_WIFI_SETTINGS));
         // Apps and Launcher settings left this panel: it is for the TV's own settings over the app in front, and
         // Launcher settings lives in the Home screen's Settings menu (settings_pill_menu).
+        if (OnePieceSkin.on(Config.load(this))) {
+            // The One Piece skin: a parchment panel, opened with the Den Den Mushi's ring.
+            OnePieceSkin.parchment(findViewById(R.id.panel));
+            OnePieceSkin.loadSounds(this);
+            OnePieceSkin.clickSettings();
+        }
         rows.getChildAt(0).requestFocus();
     }
 

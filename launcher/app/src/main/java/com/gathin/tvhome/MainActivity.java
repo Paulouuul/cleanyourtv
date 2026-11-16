@@ -112,6 +112,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     static final String ACTION_VIEW_INPUTS = "com.android.tv.action.VIEW_INPUTS";
     /** Tiles per row and dock slots (res/values/config.xml, columns). Set in onCreate. */
     static int COLUMNS = 4;
+    /**
+     * Home is on screen, between onStart and onStop: a translucent panel over it (QuickSettingsActivity) leaves it
+     * started, any app in front stops it. QuickSettingsActivity lines up under the Settings pill only then.
+     */
+    static volatile boolean homeVisible;
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
     private static final long STATS_MS = 10_000L;
@@ -201,6 +206,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView stats;
     /** config.xml continue_watching: the Watch Next row above the dock; null when off. */
     private ContinueRow continueRow;
+    /** The theme asks for the One Piece look (OnePieceSkin). */
+    private boolean onePiece;
+    /** One Piece skin: Luffy's greeting in the header (Android 9 and up), and the network pill's Den Den Mushi. */
+    private LuffyGreeting luffy;
+    private OnePieceIcon denDen;
+    /** Home came back on screen (onStart): Luffy greets on the next resume. */
+    private boolean greetOnResume;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -466,6 +478,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        onePiece = OnePieceSkin.on(cfg);
+        AppAdapter.onePiece = onePiece;
+        if (onePiece) OnePieceSkin.loadSounds(this);
         homeAppKeys = RemoteKeys.parseAppKeys(cfg.appKeys);
         clockFormat = cfg.clockFormat;
         ClockFormat.apply(getWindow().getDecorView(), clockFormat);
@@ -512,6 +527,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         root = findViewById(R.id.root);
         root.setBackgroundColor(cfg.backgroundColor);
+        if (onePiece) root.setBackgroundResource(R.drawable.onepiece_ocean);   // deep sea with cartoon waves
         // root fills the window with an opaque colour (Config keeps background_color opaque), so the window's own
         // black under it is a second full-screen fill on every frame for nothing. The starting window still uses
         // the theme's background, so launch looks the same.
@@ -521,6 +537,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
+        if (onePiece) glass.setRope(true);
         if (festive) glass.setAccent(festival.accentColor());
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
@@ -561,6 +578,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // The clock's own white for the date and the line before it, instead of their dimmed whites.
             ((TextView) findViewById(R.id.date)).setTextColor(Color.WHITE);
             findViewById(R.id.clockDivider).setBackgroundColor(Color.WHITE);
+        }
+        if (onePiece) {
+            OnePieceSkin.applyHome(this);
+            greetingColor = greeting.getCurrentTextColor();   // the greeting's colour is put back from this later
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                View leftBlock = findViewById(R.id.leftBlock);
+                luffy = new LuffyGreeting(this, (RelativeLayout) leftBlock.getParent(), leftBlock,
+                        findViewById(R.id.topButtons));
+            }
         }
         if (getResources().getBoolean(R.bool.rtl_menu_bar)) {
             // Center Hebrew greetings over the numeric time, independent of a visible AM/PM label. The clock's row
@@ -707,6 +733,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         adapter.setSavedOrder(Order.ranks(savedOrder, dockApps), Order.docked(savedOrder, dockApps));
         appsScreen = getResources().getBoolean(R.bool.apps_screen) && dockRow && !singleRow;
         if (appsScreen) adapter.setHomeLimit(COLUMNS);   // Home keeps the pinned row; the rest is on the Apps screen
+        AppAdapter.scaleSpacing = appsScreen;   // more pinned apps, smaller tiles: smaller gaps around them too
         grid.setAdapter(adapter);
         setUpContinueRow();
 
@@ -719,8 +746,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
             int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
             int tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
-            int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(tileW), density);
-            int dockRow = itemH + (int) (AppAdapter.DOCK_EXTRA_DP * density);   // item height plus DockDecoration offsets
+            int tileH = AppAdapter.tileHeightPx(tileW);
+            int itemH = AppAdapter.itemHeightPx(tileH, density);
+            int[] dockOffsets = AppAdapter.dockOffsetsPx(tileH, density);
+            int dockRow = itemH + dockOffsets[0] + dockOffsets[1];   // item height plus DockDecoration offsets
             int gridRows = itemH * rowsBelowDock;
             // Keep the hero below the header when the library is enabled on a short screen,
             // even when the theme requests an extra visible row below the dock.
@@ -728,6 +757,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // The Continue watching row sits between the dock and the grid rows, so the dock parks higher by its height.
             int want = Math.max(shelfClearance,
                     h - dockRow - continueGap() - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
+            if (appsScreen && continueRow != null && continueRow.hasItems()) want = shareContinueRoom(h, inner, tileH, dockRow);
             // Where the rows cannot fit even at the smallest tile (3 rows with the title on), the title keeps its
             // room above the dock and the last rows run off the bottom instead of the title drawing over the clock.
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
@@ -755,6 +785,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     });
                     grid.requestLayout();
                 });
+                // The vertical grid too: the new padding (Continue watching's items arriving, or a new pinned count
+                // after Launcher settings) only moved the dock at the next layout, which came when Home was left
+                // and shown again; meanwhile the row was placed under the old dock line, off the bottom of the screen.
+                else grid.post(grid::requestLayout);
             }
             // Cold start or column count > 4: the first focus can run before the grid has its final width or
             // padding, leaving the glass at the XML design size until a key is pressed.
@@ -831,8 +865,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
-        btnInputs.setOnClickListener(v -> showInputs());
-        btnWifi.setOnClickListener(v -> openNetworkPill());
+        btnInputs.setOnClickListener(v -> {
+            if (onePiece) OnePieceSkin.clickSettings();
+            showInputs();
+        });
+        btnWifi.setOnClickListener(v -> {
+            if (onePiece) OnePieceSkin.clickSettings();
+            openNetworkPill();
+        });
         btnVpn.setOnClickListener(v -> openVpnPill());
         btnWifi.setOnLongClickListener(v -> {
             open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
@@ -845,6 +885,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         settingsPillMenu = getResources().getBoolean(R.bool.settings_pill_menu);
         btnSettings.setOnClickListener(v -> {
+            if (onePiece) OnePieceSkin.clickSettings();
             if (launcherSettingsButton) startActivityForResult(
                     new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
             else if (settingsPillMenu) showSettingsMenu();
@@ -866,7 +907,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // apps_screen: the round apps button opens the Apps screen, the grid of every app.
             btnLibraryTop.setVisibility(View.VISIBLE);
             btnLibraryTop.setContentDescription(getString(R.string.apps_screen));
-            btnLibraryTop.setOnClickListener(v -> startActivity(new Intent(this, AppsActivity.class)));
+            btnLibraryTop.setOnClickListener(v -> {
+                if (onePiece) OnePieceSkin.clickApps();
+                startActivity(new Intent(this, AppsActivity.class));
+            });
         }
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         iconOnlyButtons = cfg.iconOnlyButtons;
@@ -949,6 +993,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+        else if (onePiece) applyOnePieceIcons((TextView) btnSettings);
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
@@ -1086,6 +1131,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Still on screen (the quick panel was over it, or Home was already in front): the tiles are current,
             // so only go back to the first one; rebuilding would replay the entrance animation for nothing.
             grid.post(() -> focusTile(0));
+            if (luffy != null) luffy.play();   // Home pressed on Home: Luffy says his line again
         }
     }
 
@@ -1094,6 +1140,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onStart();
         stopped = false;
         started = true;
+        homeVisible = true;
+        greetOnResume = true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(timeReceiver, timeFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -1166,6 +1214,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 lastPetalShower = today;
                 handler.postDelayed(this::playPetalShower, 450);
             }
+        }
+        if (luffy != null && greetOnResume) {
+            // Back on Home from anywhere (the TV's start, an app, an input, the Apps screen, settings): Luffy greets
+            // once Home has settled. The quick panel over Home never stopped it, so closing it does not.
+            greetOnResume = false;
+            handler.postDelayed(() -> { if (resumed && luffy != null) luffy.play(); }, 900);
         }
     }
 
@@ -1351,6 +1405,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (gameDay != null) gameDay.stop();
         handler.removeCallbacks(turnTick);
         if (lamp != null) lamp.stop();
+        if (luffy != null) luffy.stop();
         cancelPendingFocusScroll();
         // Nothing of ours stays on screen over another app; an undecided prompt simply returns next time.
         if (cardPrompt != null) cardPrompt.dismiss();
@@ -1362,6 +1417,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onStop() {
         super.onStop();
         started = false;
+        homeVisible = false;
         unregisterReceiver(timeReceiver);
         clockRefresh.stop();
         handler.removeCallbacks(clockCheck);
@@ -1406,6 +1462,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (luffy != null) luffy.release();
         RemoteKeys.release(this);
         cancelHoldOk();
         if (gameDay != null) gameDay.shutdown();
@@ -2351,6 +2408,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             @Override public void onRowOpen(ContinueWatching.Item item) {
                 Intent i = ContinueWatching.intentFor(MainActivity.this, item);
                 if (i == null) return;
+                if (onePiece) OnePieceSkin.clickOpen();
                 try {
                     startActivity(i);
                 } catch (RuntimeException e) {
@@ -2361,6 +2419,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
             }
         }, getString(R.string.continue_watching));
+        if (onePiece) continueRow.outlineCaption();
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMarginStart((int) (56 * density));
@@ -2399,6 +2458,50 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private int continueRowHeight;
 
+    /**
+     * The pinned count whose layout sets Home's margins for every count: the most Launcher settings offers, so the
+     * smallest tiles and the tightest spacing (LauncherSettingsActivity, Apps pinned 4 to 7).
+     */
+    private static final int REFERENCE_COLUMNS = 7;
+    /** The fewest Continue watching cards a row shows across its width, however much height it has. */
+    private static final float CONTINUE_CARDS_ACROSS = 3f;
+
+    /**
+     * apps_screen with Continue watching: the space above the pinned row and under Continue watching is the same for
+     * every pinned count, the one REFERENCE_COLUMNS gives, worked out from that count's tile size (the gaps shrink
+     * with the tiles, AppAdapter.spacingScale). Continue watching takes all the height left between them: its cards
+     * and text grow with fewer, smaller pinned apps and shrink with fewer, bigger ones.
+     * Returns the grid's top padding: where the pinned row starts.
+     */
+    private int shareContinueRoom(int h, int innerW, int tileH, int dockRowH) {
+        int bottom = (int) (AppAdapter.BOTTOM_ROOM_DP * density);
+        // The design layout: a full-size tile and Continue watching at its own size, with the rest above the row.
+        int designH = Math.round(AppAdapter.DESIGN_H_DP * density);
+        int[] o = AppAdapter.dockOffsetsPx(designH, density);
+        int dock0 = AppAdapter.itemHeightPx(designH, density) + o[0] + o[1];
+        int cont0 = Math.round(continueGap() / continueRow.scale());
+        // The space above, scaled like the gaps of the reference count's tiles.
+        int refTileH = AppAdapter.tileHeightPx(AppAdapter.tileWidthPx(innerW, REFERENCE_COLUMNS, density));
+        int top = Math.round((h - dock0 - cont0 - bottom) * AppAdapter.spacingScale(refTileH, density));
+        // The tile itself starts below the item's padding and the dock's offset, which grow with the tile: move the
+        // row up by the difference, so the visible top of the tiles is where the reference count's are.
+        int[] refPad = AppAdapter.itemSpacingPx(refTileH, density), refOff = AppAdapter.dockOffsetsPx(refTileH, density);
+        int[] pad = AppAdapter.itemSpacingPx(tileH, density), off = AppAdapter.dockOffsetsPx(tileH, density);
+        top = Math.max(0, top + refPad[0] + refOff[0] - pad[0] - off[0]);
+        float scale = Math.max(0.5f, (h - top - dockRowH - bottom) / (float) cont0);
+        // No bigger than CONTINUE_CARDS_ACROSS cards across the row's width: in a narrow row the height alone could
+        // make two cards fill it. The height the cap leaves goes above the pinned row instead.
+        int rowW = root.getWidth() - (int) (56 * density);
+        float byWidth = rowW / (CONTINUE_CARDS_ACROSS * (ContinueRow.CARD_W_DP + 18) * density);
+        boolean capped = rowW > 0 && byWidth < scale;
+        if (capped) scale = Math.max(0.5f, byWidth);
+        if (Math.abs(scale - continueRow.scale()) >= 0.01f) {
+            continueRow.setScale(scale);
+            continueRowHeight = 0;   // measured again at the new size
+        }
+        return capped ? Math.max(0, h - dockRowH - continueGap() - bottom) : top;
+    }
+
     /** Puts the row in the gap under the dock, wherever the grid has scrolled to. */
     private void placeContinueRow() {
         if (continueRow == null) return;
@@ -2418,9 +2521,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // alone was found at the top of the screen, beside the header buttons, and took their Right and Up.
         FrameLayout.LayoutParams rowLp = (FrameLayout.LayoutParams) continueRow.getLayoutParams();
         int top = Math.round(y);
-        if (rowLp.topMargin != top) {
+        // Its own height, not wrap_content: placed first under a dock line near the bottom (a new pinned count, the
+        // items arriving), a wrap_content row was measured into the few pixels left there and kept that height once
+        // moved up, its cards cut off under the title until Home was left and shown again.
+        int height = continueGap();
+        if (rowLp.topMargin != top || (height > 0 && rowLp.height != height)) {
             rowLp.topMargin = top;
+            if (height > 0) rowLp.height = height;
             continueRow.setLayoutParams(rowLp);
+            // Called from layout listeners, where the layout request is dropped: lay the row out on the next frame.
+            root.post(continueRow::requestLayout);
         }
         View anchor = stats.getVisibility() == View.VISIBLE ? stats : findViewById(R.id.leftBlock);
         Rect a = new Rect(0, 0, anchor.getWidth(), anchor.getHeight());
@@ -3249,7 +3359,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             btnWifi.setContentDescription(btnWifi.getText());
             btnWifi.setText(null);
         }
-        if (festive && lamp != null) {
+        if (denDen != null) {
+            denDen.setAwake(online);
+        } else if (festive && lamp != null) {
             if (online && flame == 0) flame = 3;   // online some other way (cellular, USB tethering)
             lamp.setSteady(steady);
             lamp.setFlame(flame);
@@ -3340,6 +3452,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         setFestiveIcon(settings, marigold);
         addFocusAction(inputs, bell::ring);
         addFocusAction(settings, marigold::turn);
+    }
+
+    /** One Piece skin: a Log Pose for Inputs, a Den Den Mushi for the network, a chest for Apps, a wheel for Settings. */
+    private void applyOnePieceIcons(TextView settings) {
+        OnePieceIcon pose = new OnePieceIcon(density, OnePieceIcon.LOG_POSE);
+        denDen = new OnePieceIcon(density, OnePieceIcon.DEN_DEN);
+        OnePieceIcon chest = new OnePieceIcon(density, OnePieceIcon.CHEST);
+        OnePieceIcon wheel = new OnePieceIcon(density, OnePieceIcon.WHEEL);
+        TextView[] pills = {(TextView) btnInputs, btnWifi, (TextView) btnLibraryTop, settings};
+        OnePieceIcon[] icons = {pose, denDen, chest, wheel};
+        int[] kinds = {OnePieceIcon.LOG_POSE, OnePieceIcon.DEN_DEN, OnePieceIcon.CHEST, OnePieceIcon.WHEEL};
+        for (int i = 0; i < pills.length; i++) {
+            OnePieceIcon icon = icons[i];
+            int kind = kinds[i];
+            icon.setReducedMotion(reducedMotion);
+            setFestiveIcon(pills[i], icon);
+            addFocusAction(pills[i], () -> {
+                icon.nudge();
+                OnePieceSkin.focus(kind);
+            });
+        }
     }
 
     private static void setFestiveIcon(TextView pill, Drawable icon) {
@@ -3875,6 +4008,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Drop in: fade and unfold from the top edge, hanging under the anchor pill. */
     private void dropIn(PopupWindow popup, View panel, View anchor, int gravity) {
+        if (onePiece) OnePieceSkin.parchment(panel);
         panel.setAlpha(0f);
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);
@@ -4132,6 +4266,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             panel.setPivotY(height);
             panel.setScaleY(0.92f);
             panel.setTranslationY(8 * density);
+            if (onePiece) OnePieceSkin.parchment(panel);
             popup.showAtLocation(root, Gravity.NO_GRAVITY, at[0], Math.max(0, at[1] - gap - height));
             panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
                     .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();

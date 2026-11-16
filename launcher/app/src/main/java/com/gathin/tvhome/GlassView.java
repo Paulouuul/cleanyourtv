@@ -29,6 +29,9 @@ public class GlassView extends View {
     /** glass_style rim or halo: no sheen and no fill, only the crisp rim (and, for halo, a lighter outer glow). */
     private boolean flat;
     private boolean halo;
+    /** One Piece skin: the flat rim is a gold rope (gold with darker twists) instead of plain white. */
+    private boolean rope;
+    private final Paint twist = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -78,13 +81,28 @@ public class GlassView extends View {
 
     private int accent;
 
+    /** The One Piece skin's gold rope for focus; it implies the flat rim. */
+    void setRope(boolean on) {
+        rope = on;
+        if (on) {
+            flat = true;
+            halo = false;
+            twist.setStyle(Paint.Style.STROKE);
+            twist.setColor(0xFFC8871A);
+            twist.setPathEffect(new android.graphics.DashPathEffect(new float[]{3.5f * density, 4f * density}, 0));
+            applyFlatRim();
+        }
+        invalidate();
+    }
+
     /**
      * The flat styles draw the same outline as the Apps screen's tiles: solid white, 3dp, and the accent itself at
      * 4dp while an app is carried, so focus reads the same on Home and on the Apps screen (TCL 32S5K build).
      */
     private void applyFlatRim() {
-        rim.setColor(accent == 0 ? 0xFFFFFFFF : 0xFF000000 | (accent & 0xFFFFFF));
-        rim.setStrokeWidth((accent == 0 ? 3f : 4f) * density);
+        rim.setColor(accent == 0 ? (rope ? OnePieceSkin.GOLD : 0xFFFFFFFF) : 0xFF000000 | (accent & 0xFFFFFF));
+        rim.setStrokeWidth((accent == 0 ? (rope ? 4.5f : 3f) : 4f) * density);
+        twist.setStrokeWidth(rim.getStrokeWidth());
     }
 
     void setRadius(float px) {
@@ -121,6 +139,7 @@ public class GlassView extends View {
         }
         if (flat) {
             canvas.drawRoundRect(rect, radius, radius, rim);
+            if (rope && accent == 0) canvas.drawRoundRect(rect, radius, radius, twist);
             return;
         }
 

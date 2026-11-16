@@ -80,8 +80,11 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
                                @NonNull RecyclerView.State state) {
         int pos = parent.getChildAdapterPosition(view);
         if (pos >= 0 && (singleRow || pos < dockSize)) {
-            outRect.top = (int) (6 * density);
-            outRect.bottom = (int) (12 * density);
+            View card = view.findViewById(R.id.card);
+            int tileH = card != null && card.getLayoutParams() != null ? card.getLayoutParams().height : 0;
+            int[] o = AppAdapter.dockOffsetsPx(tileH > 0 ? tileH : Math.round(AppAdapter.DESIGN_H_DP * density), density);
+            outRect.top = o[0];
+            outRect.bottom = o[1];
         }
     }
 

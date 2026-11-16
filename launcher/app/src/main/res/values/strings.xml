@@ -166,4 +166,6 @@
     <string name="clock_format_system">System</string>
     <string name="clock_format_12">12-hour</string>
     <string name="clock_format_24">24-hour</string>
+    <!-- One Piece skin: the speech bubble of Luffy's greeting on Home. -->
+    <string name="onepiece_greeting">My name is Monkey D. Luffy, and I\'m gonna be King of the Pirates!</string>
 </resources>

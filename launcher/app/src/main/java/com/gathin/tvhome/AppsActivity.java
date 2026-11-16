@@ -51,6 +51,8 @@ public final class AppsActivity extends Activity {
     /** Result extra: the chosen app's component, flattened short (the Home tile key). */
     static final String EXTRA_COMPONENT = "com.gathin.tvhome.extra.COMPONENT";
     private boolean pick;
+    /** The theme's One Piece skin: solid background, wooden tiles, gold rope focus, click sounds. */
+    private boolean onePiece;
     private android.widget.PopupWindow menu;
     private static final long HOLD_OK_MS = 550;
     private static final int MOVE_ACCENT = 0xFF6EC1FF;
@@ -101,6 +103,16 @@ public final class AppsActivity extends Activity {
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tlp.setMarginStart(inset);
         page.addView(title, tlp);
+        Config skinCfg = Config.load(this);
+        onePiece = OnePieceSkin.on(skinCfg);
+        if (onePiece) {
+            // The theme's solid colour, like Home's.
+            page.setBackgroundResource(R.drawable.onepiece_ocean);
+            OnePieceSkin.loadSounds(this);
+            OnePieceSkin.outline(title, getResources().getDisplayMetrics().density);
+            OnePieceSkin.pirateTitle(title);
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 44);
+        }
 
         grid = new RecyclerView(this);
         grid.setClipToPadding(false);
@@ -365,6 +377,7 @@ public final class AppsActivity extends Activity {
                 .setComponent(app.component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             startActivity(i);
+            if (onePiece) OnePieceSkin.clickOpen();
             LastOpened.record(this, app.component.getPackageName());
         } catch (RuntimeException e) {
             android.widget.Toast.makeText(this, R.string.not_available, android.widget.Toast.LENGTH_SHORT).show();
@@ -436,10 +449,18 @@ public final class AppsActivity extends Activity {
             nlp.topMargin = dp(8);
             item.addView(name, nlp);
 
-            GradientDrawable ring = new GradientDrawable();
-            ring.setColor(Color.TRANSPARENT);
-            ring.setCornerRadius(dp(14));
-            ring.setStroke(dp(3), Color.WHITE);
+            Drawable ring;
+            if (onePiece) {
+                float d = getResources().getDisplayMetrics().density;
+                ring = OnePieceSkin.rope(d, dp(14));
+                card.setTag(R.id.banner, OnePieceSkin.woodFrame(d, dp(14)));
+            } else {
+                GradientDrawable plain = new GradientDrawable();
+                plain.setColor(Color.TRANSPARENT);
+                plain.setCornerRadius(dp(14));
+                plain.setStroke(dp(3), Color.WHITE);
+                ring = plain;
+            }
             GradientDrawable carried = new GradientDrawable();
             carried.setColor(Color.TRANSPARENT);
             carried.setCornerRadius(dp(14));
@@ -478,7 +499,7 @@ public final class AppsActivity extends Activity {
         /** White ring on the focused tile; the accent ring on the carried one, focused or not. */
         private Drawable foregroundFor(View card, boolean focused, int position) {
             if (moving >= 0 && position == moving) return (Drawable) card.getTag(R.id.card);
-            return focused ? (Drawable) card.getTag() : null;
+            return focused ? (Drawable) card.getTag() : (Drawable) card.getTag(R.id.banner);
         }
 
         @Override

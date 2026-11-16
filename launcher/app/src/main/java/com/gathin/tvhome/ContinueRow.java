@@ -46,12 +46,19 @@ final class ContinueRow extends LinearLayout {
     }
 
     static final int CARD_W_DP = 160, CARD_H_DP = 90;
-    private static final float FOCUS_SCALE = 1.08f;
+    /** The most a focused card grows by; less when the room around the cards is narrower (focusScale). */
+    private static final float FOCUS_SCALE = 1.05f;
 
     private final Host host;
     private final float density;
     private final LinearLayout cards;
     private final HorizontalScrollView scroller;
+    private final TextView title;
+    /** Every size in the row times this (setScale): Home gives the row the room smaller pinned tiles leave. */
+    private float scale = 1f;
+    /** OnePieceSkin's caption: Pirata One at a larger size (outlineCaption). */
+    private boolean pirateCaption;
+    private List<ContinueWatching.Item> items;
     private final List<View> cardViews = new ArrayList<>();
     private final java.util.Map<ContinueWatching.Item, ImageView> artViews = new HashMap<>();
     private int lastIndex;
@@ -69,7 +76,7 @@ final class ContinueRow extends LinearLayout {
         setClipChildren(false);
         setClipToPadding(false);
 
-        TextView title = new TextView(context);
+        title = new TextView(context);
         title.setText(caption);
         title.setAllCaps(true);
         // The greeting's style (activity_main.xml), so the two caps lines read as one family.
@@ -94,7 +101,7 @@ final class ContinueRow extends LinearLayout {
         // Room for the focused card's zoom on every side, so the scroller does not clip it.
         // Bottom only as much as the 1.08 zoom needs, so the next grid row follows the cards closely.
         int pad = dp(12);
-        cards.setPadding(pad, pad, pad, dp(4));
+        cards.setPadding(pad, pad, pad, Math.round(4 * density));   // unscaled: the same bottom margin at any size
         scroller.addView(cards, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         addView(scroller, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
@@ -143,7 +150,31 @@ final class ContinueRow extends LinearLayout {
         return isShowing() ? cardViews.get(0).getId() : View.NO_ID;
     }
 
+    /** OnePieceSkin: the caption in white with a deep-sea outline, readable over a bright wallpaper. */
+    void outlineCaption() {
+        OnePieceSkin.outline(title, density);
+        OnePieceSkin.pirateTitle(title);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22 * scale);
+        pirateCaption = true;
+    }
+
+    float scale() {
+        return scale;
+    }
+
+    /** Resizes the cards, their text and the caption; the cards are made again at the new size. */
+    void setScale(float s) {
+        if (Math.abs(s - scale) < 0.01f) return;
+        scale = s;
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, (pirateCaption ? 22 : 12) * scale);
+        ((LayoutParams) title.getLayoutParams()).setMarginStart(dp(12));
+        int pad = dp(12);
+        cards.setPadding(pad, pad, pad, Math.round(4 * density));   // unscaled: the same bottom margin at any size
+        if (items != null) setItems(items);
+    }
+
     void setItems(List<ContinueWatching.Item> items) {
+        this.items = items;
         boolean hadFocus = hasFocus();
         cards.removeAllViews();
         cardViews.clear();
@@ -211,8 +242,10 @@ final class ContinueRow extends LinearLayout {
         card.setFocusable(true);
         card.setClickable(true);
         card.setContentDescription(appLabel(item.pkg) + ": " + item.title);
+        // One Piece skin (pirateCaption): a "wanted poster", the picture on a sheet of parchment over a caption.
+        boolean poster = pirateCaption;
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xFF1E2433);
+        bg.setColor(poster ? OnePieceSkin.PAPER : 0xFF1E2433);
         bg.setCornerRadius(dp(12));
         card.setBackground(bg);
         card.setOutlineProvider(new ViewOutlineProvider() {
@@ -237,19 +270,34 @@ final class ContinueRow extends LinearLayout {
             }
         }
         artViews.put(item, art);
-        card.addView(art, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout.LayoutParams alp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        if (poster) {
+            alp.setMargins(dp(6), dp(6), dp(6), dp(item.subtitle.isEmpty() ? 34 : 48));
+            art.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp(7));
+                }
+            });
+            art.setClipToOutline(true);
+        }
+        card.addView(art, alp);
 
-        View scrim = new View(ctx);
-        // Flat: a solid band under the text instead of a gradient (TCL 32S5K build).
-        scrim.setBackgroundColor(0xCC111216);
-        card.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46), Gravity.BOTTOM));
+        if (!poster) {
+            View scrim = new View(ctx);
+            // Flat: a solid band under the text instead of a gradient (TCL 32S5K build).
+            scrim.setBackgroundColor(0xCC111216);
+            card.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46), Gravity.BOTTOM));
+        }
 
         LinearLayout text = new LinearLayout(ctx);
         text.setOrientation(VERTICAL);
         text.setPadding(dp(10), 0, dp(10), dp(item.progress >= 0 ? 10 : 8));
-        TextView name = label(item.title, 14, 0xFFFFFFFF, R.string.font_medium);
+        TextView name = label(item.title, 14, poster ? OnePieceSkin.PAPER_INK : 0xFFFFFFFF, R.string.font_medium);
         text.addView(name);
-        if (!item.subtitle.isEmpty()) text.addView(label(item.subtitle, 11, 0xB3FFFFFF, R.string.font_regular));
+        if (!item.subtitle.isEmpty()) {
+            text.addView(label(item.subtitle, 11, poster ? 0xCC5A3A1E : 0xB3FFFFFF, R.string.font_regular));
+        }
         card.addView(text, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 
@@ -267,16 +315,16 @@ final class ContinueRow extends LinearLayout {
             });
             badge.setClipToOutline(true);
             FrameLayout.LayoutParams ilp = new FrameLayout.LayoutParams(dp(26), dp(26), Gravity.TOP | Gravity.START);
-            ilp.setMargins(dp(8), dp(8), 0, 0);
+            ilp.setMargins(dp(poster ? 12 : 8), dp(poster ? 12 : 8), 0, 0);
             card.addView(badge, ilp);
         }
 
         if (item.progress >= 0) {
             View track = new View(ctx);
-            track.setBackgroundColor(0x40FFFFFF);
+            track.setBackgroundColor(poster ? 0x335A3A1E : 0x40FFFFFF);
             card.addView(track, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3), Gravity.BOTTOM));
             View bar = new View(ctx);
-            bar.setBackgroundColor(Color.WHITE);
+            bar.setBackgroundColor(poster ? 0xFFC0392B : Color.WHITE);
             FrameLayout.LayoutParams blp = new FrameLayout.LayoutParams(0, dp(3), Gravity.BOTTOM | Gravity.START);
             card.addView(bar, blp);
             card.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
@@ -293,13 +341,37 @@ final class ContinueRow extends LinearLayout {
         ring.setCornerRadius(dp(12));
         ring.setStroke(dp(2), Color.WHITE);
         ring.setColor(Color.TRANSPARENT);
+        Drawable focusRing = ring, restRing = null;
+        if (poster) {
+            // The poster's wooden edge at rest, the gold rope under focus.
+            GradientDrawable edge = new GradientDrawable();
+            edge.setCornerRadius(dp(12));
+            edge.setStroke(Math.max(1, dp(2)), OnePieceSkin.WOOD);
+            edge.setColor(Color.TRANSPARENT);
+            restRing = edge;
+            GradientDrawable gold = new GradientDrawable();
+            gold.setCornerRadius(dp(12));
+            gold.setStroke(dp(4), OnePieceSkin.GOLD);
+            gold.setColor(Color.TRANSPARENT);
+            GradientDrawable twist = new GradientDrawable();
+            twist.setCornerRadius(dp(12));
+            twist.setStroke(dp(4), 0xFFC8871A, 3.5f * density * scale, 4f * density * scale);
+            twist.setColor(Color.TRANSPARENT);
+            focusRing = new android.graphics.drawable.LayerDrawable(new Drawable[]{gold, twist});
+            card.setForeground(restRing);
+        }
+        final Drawable onFocus = focusRing, atRest = restRing;
         card.setOnFocusChangeListener((v, focused) -> {
             v.animate().cancel();
-            v.animate().scaleX(focused ? FOCUS_SCALE : 1f).scaleY(focused ? FOCUS_SCALE : 1f).setDuration(150).start();
-            card.setForeground(focused ? ring : null);
+            float zoom = focused ? focusScale(v) : 1f;
+            v.animate().scaleX(zoom).scaleY(zoom).setDuration(150).start();
+            card.setForeground(focused ? onFocus : atRest);
             // A stray focus also lands here; strayFocus has already queued the move back to the dock, which puts
             // the glass and the title back.
             if (focused) {
+                // The scroller only brings the card's own edges on screen, so the last card sat against the screen's
+                // right edge and its zoom was cut off: scroll on until the zoom's room is on screen too.
+                post(() -> keepZoomOnScreen(v));
                 lastIndex = index;
                 host.onRowFocused();
             }
@@ -333,10 +405,30 @@ final class ContinueRow extends LinearLayout {
         return card;
     }
 
+    /** The room kept around the cards for the zoom: the cards' side padding. */
+    private int zoomRoom() {
+        return dp(12);
+    }
+
+    /** At most FOCUS_SCALE, and never more than the card can grow inside zoomRoom on each side. */
+    private float focusScale(View card) {
+        int w = card.getWidth();
+        if (w <= 0) return 1f;
+        return Math.min(FOCUS_SCALE, 1f + 2f * zoomRoom() / w);
+    }
+
+    private void keepZoomOnScreen(View card) {
+        if (!card.isFocused()) return;
+        int room = zoomRoom(), x = scroller.getScrollX(), viewW = scroller.getWidth();
+        int left = card.getLeft() + cards.getLeft() - room, right = card.getRight() + cards.getLeft() + room;
+        if (right > x + viewW) scroller.smoothScrollTo(right - viewW, 0);
+        else if (left < x) scroller.smoothScrollTo(Math.max(0, left), 0);
+    }
+
     private TextView label(String s, int sp, int color, int font) {
         TextView t = new TextView(getContext());
         t.setText(s);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp * scale);
         t.setTextColor(color);
         t.setTypeface(UiFont.get(getContext(), font));
         t.setSingleLine(true);
@@ -374,6 +466,6 @@ final class ContinueRow extends LinearLayout {
     }
 
     private int dp(int v) {
-        return Math.round(v * density);
+        return Math.round(v * density * scale);
     }
 }
