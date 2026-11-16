@@ -117,6 +117,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * started, any app in front stops it. QuickSettingsActivity lines up under the Settings pill only then.
      */
     static volatile boolean homeVisible;
+    /** Home is resumed (in front, taking keys), and when it last paused (SystemClock.uptimeMillis). */
+    private static volatile boolean homeResumed;
+    private static volatile long homePausedAt;
+
+    /**
+     * The quick panel is opening over Home itself: Home is in front, or paused just now to let the panel in. An app
+     * still loading leaves Home started (homeVisible) until its first frame, but Home paused when that app was opened.
+     */
+    /** Home is in front right now: the Settings key, pressed now, opens the quick panel over Home itself. */
+    static boolean homeInFront() {
+        return homeResumed;
+    }
+
+    static boolean panelOverHome() {
+        return homeVisible && (homeResumed || android.os.SystemClock.uptimeMillis() - homePausedAt < 1500L);
+    }
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
     private static final long STATS_MS = 10_000L;
@@ -211,6 +227,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** One Piece skin: Luffy's greeting in the header (Android 9 and up), and the network pill's Den Den Mushi. */
     private LuffyGreeting luffy;
     private OnePieceIcon denDen;
+    /** One Piece skin: the opening playing over Home after a power-on (OnePieceIntro), or null. */
+    private OnePieceIntro intro;
     /** Home came back on screen (onStart): Luffy greets on the next resume. */
     private boolean greetOnResume;
     private List<RaceWeekend.Race> raceCalendar;
@@ -537,7 +555,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
-        if (onePiece) glass.setRope(true);
+        if (onePiece) {
+            // The focused tile wears its own rope (AppAdapter); the sliding highlight only marks a carried app.
+            glass.setRope(true);
+            glass.setVisibility(View.GONE);
+        }
         if (festive) glass.setAccent(festival.accentColor());
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
@@ -586,6 +608,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 View leftBlock = findViewById(R.id.leftBlock);
                 luffy = new LuffyGreeting(this, (RelativeLayout) leftBlock.getParent(), leftBlock,
                         findViewById(R.id.topButtons));
+            }
+            if (OnePieceIntro.dueAfterBoot(this)) {
+                // The opening, once per power-on, over everything on Home; Luffy greets when it is done.
+                intro = new OnePieceIntro(this, cfg.reducedMotion, () -> {
+                    intro = null;
+                    if (resumed && luffy != null) luffy.play();
+                });
+                intro.setTranslationZ(100f * density);
+                root.addView(intro, new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                intro.post(intro::start);
             }
         }
         if (getResources().getBoolean(R.bool.rtl_menu_bar)) {
@@ -866,11 +899,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> {
-            if (onePiece) OnePieceSkin.clickSettings();
+            if (onePiece) OnePieceSkin.clickInputs();
             showInputs();
         });
         btnWifi.setOnClickListener(v -> {
-            if (onePiece) OnePieceSkin.clickSettings();
+            if (onePiece) OnePieceSkin.clickNetwork();
             openNetworkPill();
         });
         btnVpn.setOnClickListener(v -> openVpnPill());
@@ -885,7 +918,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         settingsPillMenu = getResources().getBoolean(R.bool.settings_pill_menu);
         btnSettings.setOnClickListener(v -> {
-            if (onePiece) OnePieceSkin.clickSettings();
+            if (onePiece) OnePieceSkin.clickWheel();
             if (launcherSettingsButton) startActivityForResult(
                     new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
             else if (settingsPillMenu) showSettingsMenu();
@@ -1155,6 +1188,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        homeResumed = true;
         resumed = true;
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
@@ -1215,6 +1249,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 handler.postDelayed(this::playPetalShower, 450);
             }
         }
+        if (intro != null) greetOnResume = false;   // the opening's end greets instead
         if (luffy != null && greetOnResume) {
             // Back on Home from anywhere (the TV's start, an app, an input, the Apps screen, settings): Luffy greets
             // once Home has settled. The quick panel over Home never stopped it, so closing it does not.
@@ -1386,6 +1421,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        homeResumed = false;
+        homePausedAt = android.os.SystemClock.uptimeMillis();
         resumed = false;
         // No UP reaches a paused Home, so a vendor-key hold it saw go down would still open its app later.
         // Only Home's own share is dropped: a key service that saw the same DOWN keeps its hold.
@@ -1488,7 +1525,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         for (int code : settingsKeycodes) {
             if (event.getKeyCode() != code) continue;
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-                Intent settings = settingsKeyPanel ? new Intent(this, QuickSettingsActivity.class)
+                Intent settings = settingsKeyPanel
+                        ? new Intent(this, QuickSettingsActivity.class).putExtra(QuickSettingsActivity.EXTRA_OVER_HOME, resumed)
                         : systemIntent(Settings.ACTION_SETTINGS);
                 // settings_key_clear_task, as in HomeKeyService: Back from Settings goes Home, not to a vendor page.
                 if (settingsKeyClearTask && !settingsKeyPanel) settings.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -1513,6 +1551,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (intro != null && intro.playing()) {
+            // Any key skips the One Piece opening; it does nothing else until the opening is gone.
+            if (event.getAction() == KeyEvent.ACTION_DOWN) intro.skip();
+            return true;
+        }
         if (homeIgnoreChannelKeys && RemoteKeys.isChannelKey(event.getKeyCode())) return true;
         // Vendor keys (TCL Netflix button, 4062) never reach the key services, only the focused window, so their
         // "hold:" entries run here too or nowhere. Only while resumed: onPause releases Home's holds, and a DOWN
@@ -1623,6 +1666,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         reordering = true;
         orderAtStart = adapter.movableKeys();
         glass.setAccent(REORDER_ACCENT);
+        if (onePiece) {
+            glass.setVisibility(View.VISIBLE);
+            refocusTileSkin();   // the focused tile drops its gold rope for the sliding red one
+        }
         btnReorder.setActivated(true);
         return true;
     }
@@ -1793,6 +1840,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dimOthers();   // drop() ran while reordering was still on; restore full brightness now the mode is off
         adapter.setReordering(false);
         glass.setAccent(festive ? festival.accentColor() : 0);
+        if (onePiece) {
+            glass.setVisibility(View.GONE);
+            refocusTileSkin();   // and takes its gold rope back
+        }
         btnReorder.setActivated(false);
         List<String> keys = adapter.movableKeys();
         List<String> before = orderAtStart;
@@ -3454,6 +3505,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         addFocusAction(settings, marigold::turn);
     }
 
+    /** One Piece skin: runs the focused tile's focus handling again, so its frame follows the carrying state. */
+    private void refocusTileSkin() {
+        View f = getCurrentFocus();
+        if (f == null || f.getOnFocusChangeListener() == null || grid.findContainingItemView(f) == null) return;
+        f.getOnFocusChangeListener().onFocusChange(f, true);
+    }
+
     /** One Piece skin: a Log Pose for Inputs, a Den Den Mushi for the network, a chest for Apps, a wheel for Settings. */
     private void applyOnePieceIcons(TextView settings) {
         OnePieceIcon pose = new OnePieceIcon(density, OnePieceIcon.LOG_POSE);
@@ -3467,6 +3525,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             OnePieceIcon icon = icons[i];
             int kind = kinds[i];
             icon.setReducedMotion(reducedMotion);
+            if (pills[i].getBackground() instanceof OnePiecePill) {
+                ((OnePiecePill) pills[i].getBackground()).setReducedMotion(reducedMotion);
+            }
             setFestiveIcon(pills[i], icon);
             addFocusAction(pills[i], () -> {
                 icon.nudge();
@@ -4244,7 +4305,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (at < 0) return;
             focusTile(at);
             pickUp(at);
-            Toast.makeText(this, appsScreen ? R.string.apps_move_hint : R.string.reorder_hint, Toast.LENGTH_LONG).show();
+            int hint = appsScreen ? R.string.apps_move_hint : R.string.reorder_hint;
+            if (onePiece) OnePieceSkin.toast(this, hint);
+            else Toast.makeText(this, hint, Toast.LENGTH_LONG).show();
         });
         if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);

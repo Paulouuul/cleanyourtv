@@ -29,9 +29,12 @@ public class GlassView extends View {
     /** glass_style rim or halo: no sheen and no fill, only the crisp rim (and, for halo, a lighter outer glow). */
     private boolean flat;
     private boolean halo;
-    /** One Piece skin: the flat rim is a gold rope (gold with darker twists) instead of plain white. */
+    /** One Piece skin: focus is the twisted gold rope (ropeFrame) instead of the plain rim. */
     private boolean rope;
-    private final Paint twist = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** One Piece skin: the twisted rope itself (OnePieceFrames.Rope), drawn over the slab's rect. */
+    private OnePieceFrames.Rope ropeFrame;
+    /** The red rope that marks the app being carried while Home's apps are moved (an accent is set). */
+    private OnePieceFrames.Rope ropeCarried;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -87,10 +90,11 @@ public class GlassView extends View {
         if (on) {
             flat = true;
             halo = false;
-            twist.setStyle(Paint.Style.STROKE);
-            twist.setColor(0xFFC8871A);
-            twist.setPathEffect(new android.graphics.DashPathEffect(new float[]{3.5f * density, 4f * density}, 0));
             applyFlatRim();
+            ropeFrame = OnePieceFrames.Rope.gold(density, radius);
+            ropeFrame.setCallback(this);
+            ropeCarried = OnePieceFrames.Rope.red(density, radius);
+            ropeCarried.setCallback(this);
         }
         invalidate();
     }
@@ -102,12 +106,25 @@ public class GlassView extends View {
     private void applyFlatRim() {
         rim.setColor(accent == 0 ? (rope ? OnePieceSkin.GOLD : 0xFFFFFFFF) : 0xFF000000 | (accent & 0xFFFFFF));
         rim.setStrokeWidth((accent == 0 ? (rope ? 4.5f : 3f) : 4f) * density);
-        twist.setStrokeWidth(rim.getStrokeWidth());
     }
 
     void setRadius(float px) {
         radius = px;
+        if (ropeFrame != null) {
+            ropeFrame.setRadius(px);
+            ropeCarried.setRadius(px);
+        }
         invalidate();
+    }
+
+    /** One Piece skin: the rope's focus move, as the highlight lands on a tile. */
+    void playRope() {
+        if (ropeFrame != null && accent == 0) ropeFrame.play();
+    }
+
+    @Override
+    protected boolean verifyDrawable(@androidx.annotation.NonNull android.graphics.drawable.Drawable who) {
+        return who == ropeFrame || who == ropeCarried || super.verifyDrawable(who);
     }
 
     @Override
@@ -138,8 +155,13 @@ public class GlassView extends View {
             }
         }
         if (flat) {
+            if (ropeFrame != null) {
+                OnePieceFrames.Rope r = accent == 0 ? ropeFrame : ropeCarried;
+                r.setBounds(Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom));
+                r.draw(canvas);
+                return;
+            }
             canvas.drawRoundRect(rect, radius, radius, rim);
-            if (rope && accent == 0) canvas.drawRoundRect(rect, radius, radius, twist);
             return;
         }
 

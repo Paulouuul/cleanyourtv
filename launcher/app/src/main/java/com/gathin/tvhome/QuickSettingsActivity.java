@@ -18,6 +18,9 @@ import android.widget.Toast;
  * closes the panel.
  */
 public final class QuickSettingsActivity extends Activity {
+    /** Extra: Home was in front when the Settings key was pressed, so the panel lines up under its Settings pill. */
+    static final String EXTRA_OVER_HOME = "com.gathin.tvhome.extra.OVER_HOME";
+
     @Override
     protected void attachBaseContext(android.content.Context base) {
         super.attachBaseContext(LauncherLocale.wrap(base));   // locale
@@ -38,7 +41,9 @@ public final class QuickSettingsActivity extends Activity {
             position.setMargins(inset, position.topMargin, 0, position.bottomMargin);
             panel.setLayoutParams(position);
         }
-        if (!MainActivity.homeVisible) {
+        final boolean overHome = getIntent().hasExtra(EXTRA_OVER_HOME)
+                ? getIntent().getBooleanExtra(EXTRA_OVER_HOME, false) : MainActivity.panelOverHome();
+        if (!overHome) {
             // Over any other app there is no Settings pill to line up under: the panel sits in the corner, a small
             // gap from the top and side edges of the screen.
             View panel = findViewById(R.id.panel);
@@ -59,10 +64,10 @@ public final class QuickSettingsActivity extends Activity {
         // Apps and Launcher settings left this panel: it is for the TV's own settings over the app in front, and
         // Launcher settings lives in the Home screen's Settings menu (settings_pill_menu).
         if (OnePieceSkin.on(Config.load(this))) {
-            // The One Piece skin: a parchment panel, opened with the Den Den Mushi's ring.
+            // The One Piece skin: a parchment panel, opened with the anime's alert sound, quietly.
             OnePieceSkin.parchment(findViewById(R.id.panel));
             OnePieceSkin.loadSounds(this);
-            OnePieceSkin.clickSettings();
+            OnePieceSkin.clickPanel();
         }
         rows.getChildAt(0).requestFocus();
     }

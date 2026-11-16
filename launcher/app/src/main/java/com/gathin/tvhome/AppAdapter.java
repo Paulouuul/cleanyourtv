@@ -659,7 +659,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Reorder mode on or off; takes effect at the next reload() (empty dock slots are left out while on). */
     void setReordering(boolean on) {
         reordering = on;
+        onePieceCarrying = on;
     }
+
+    /** One Piece skin: Home is moving apps, so the sliding red rope (GlassView) marks the carried tile, not the gold one. */
+    private static boolean onePieceCarrying;
 
     boolean hasEmptySlots() {
         return emptySlots > 0;
@@ -997,7 +1001,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
             });
             card.setClipToOutline(true);
-            if (onePiece) card.setForeground(OnePieceSkin.woodFrame(density));
+            // One Piece skin: the carved wooden frame at rest, the twisted gold rope on the focused tile itself (with
+            // its pull-tight move), as on the Apps screen and the Continue watching cards; no sliding highlight.
+            final Drawable woodRest = onePiece ? OnePieceSkin.woodFrame(density) : null;
+            final Drawable ropeFocus = onePiece ? OnePieceSkin.rope(density, -1f) : null;
+            if (onePiece) card.setForeground(woodRest);
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -1008,6 +1016,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
 
             card.setOnFocusChangeListener((view, focused) -> {
+                if (woodRest != null) {
+                    boolean roped = focused && !onePieceCarrying;
+                    view.setForeground(roped ? ropeFocus : woodRest);
+                    if (roped && animations && !reducedMotion) OnePieceFrames.Rope.playIfRope(ropeFocus);
+                }
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();

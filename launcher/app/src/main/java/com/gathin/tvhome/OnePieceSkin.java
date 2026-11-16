@@ -56,7 +56,8 @@ final class OnePieceSkin {
             ViewGroup g = (ViewGroup) bar;
             for (int i = 0; i < g.getChildCount(); i++) {
                 View pill = g.getChildAt(i);
-                if (pill.getBackground() != null) pill.setBackgroundResource(R.drawable.pill_bg_onepiece);
+                // Each pill its own drawable: the focus move plays on the one that took focus.
+                if (pill.getBackground() != null) pill.setBackground(new OnePiecePill(d));
             }
         }
     }
@@ -82,7 +83,7 @@ final class OnePieceSkin {
     // ---- sounds ----
 
     private static android.media.SoundPool sounds;
-    private static int stretch, denDen, shishishi;
+    private static int stretch, denDen, gomuGomu, haki, don, alert;
     /** The top-bar icons' focus sounds, by OnePieceIcon kind: chime, ring, coins, wooden ratchet. */
     private static final int[] focusSounds = new int[4];
 
@@ -94,17 +95,43 @@ final class OnePieceSkin {
                         .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
                         .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build()).build();
         android.content.Context app = ctx.getApplicationContext();
+        // A sound asked for before it finished loading (the quick panel opened in a fresh process) plays once loaded.
+        sounds.setOnLoadCompleteListener((pool, id, status) -> {
+            if (status != 0) return;
+            loaded.add(id);
+            if (id == pending) {
+                pending = 0;
+                pool.play(id, pendingVolume, pendingVolume, 1, 0, 1f);
+            }
+        });
         stretch = sounds.load(app, R.raw.click_stretch, 1);
         denDen = sounds.load(app, R.raw.click_denden, 1);
-        shishishi = sounds.load(app, R.raw.click_shishishi, 1);
+        gomuGomu = sounds.load(app, R.raw.click_gomugomu, 1);
+        haki = sounds.load(app, R.raw.click_haki, 1);
+        don = sounds.load(app, R.raw.click_don, 1);
+        alert = sounds.load(app, R.raw.click_alert, 1);
         focusSounds[OnePieceIcon.LOG_POSE] = sounds.load(app, R.raw.focus_logpose, 1);
         focusSounds[OnePieceIcon.DEN_DEN] = sounds.load(app, R.raw.focus_denden, 1);
         focusSounds[OnePieceIcon.CHEST] = sounds.load(app, R.raw.focus_chest, 1);
         focusSounds[OnePieceIcon.WHEEL] = sounds.load(app, R.raw.focus_wheel, 1);
     }
 
+    private static final java.util.Set<Integer> loaded = new java.util.HashSet<>();
+    private static int pending;
+    private static float pendingVolume = 0.6f;
+
     private static void play(int id) {
-        if (sounds != null && id != 0) sounds.play(id, 0.6f, 0.6f, 1, 0, 1f);
+        play(id, 0.6f);
+    }
+
+    private static void play(int id, float volume) {
+        if (sounds == null || id == 0) return;
+        if (!loaded.contains(id)) {
+            pending = id;
+            pendingVolume = volume;
+            return;
+        }
+        sounds.play(id, volume, volume, 1, 0, 1f);
     }
 
     /** A top-bar icon takes focus: its own short sound. */
@@ -115,85 +142,73 @@ final class OnePieceSkin {
     /** An app or a Continue watching card opens: Luffy's rubber stretch. */
     static void clickOpen() { play(stretch); }
 
-    /** Settings and the network: the Den Den Mushi's ring. */
-    static void clickSettings() { play(denDen); }
+    /** The network pill (the Den Den Mushi): its ring. */
+    static void clickNetwork() { play(denDen); }
 
-    /** The Apps screen opens: Luffy's laugh. */
-    static void clickApps() { play(shishishi); }
+    /** The inputs pill (the Log Pose): the anime's Observation Haki sound, sensing what is around. */
+    static void clickInputs() { play(haki); }
+
+    /** The settings pill (the ship's wheel): the anime's "DON!". */
+    static void clickWheel() { play(don); }
+
+    /** The quick panel the remote's Settings key opens: the anime's alert, at about half volume (it opens often). */
+    static void clickPanel() { play(alert, 0.32f); }
+
+    /** The Apps screen opens: Luffy calling "Gomu Gomu no!". */
+    static void clickApps() { play(gomuGomu); }
 
     // ---- frames and panels ----
 
     /** Wood brown of the tiles' frames and the parchment's edge. */
     static final int WOOD = 0xFF6B3F1D;
     /** Parchment: the panels and the Continue watching cards' "wanted poster" paper. */
-    static final int PAPER = 0xFFF3E0B0, PAPER_DARK = 0xFFE4C788, PAPER_INK = 0xFF3B2412;
+    static final int PAPER = 0xFFF3E0B0, PAPER_INK = 0xFF3B2412;
 
-    /**
-     * A wooden frame drawn over a tile: a dark outer board and a light inner bevel, its corners following the tile's
-     * own (AppAdapter.cornerRadius at the tile's width) whatever size the tile is.
-     */
+    /** A carved wooden frame over a tile (OnePieceFrames.Wood), its corners following the tile's own. */
     static android.graphics.drawable.Drawable woodFrame(float density) {
-        return new Frame(density, false, -1f);
+        return new OnePieceFrames.Wood(density, -1f);
     }
 
     /** The wooden frame for a tile whose corners have a fixed radius (the Apps screen's). */
     static android.graphics.drawable.Drawable woodFrame(float density, float radiusPx) {
-        return new Frame(density, false, radiusPx);
+        return new OnePieceFrames.Wood(density, radiusPx);
     }
 
-    /** A gold rope round the focused tile: gold with darker twists; its corners at a fixed radius. */
+    /** The twisted gold rope round the focused tile (OnePieceFrames.Rope); it plays its move each time it is shown. */
     static android.graphics.drawable.Drawable rope(float density, float radiusPx) {
-        return new Frame(density, true, radiusPx);
+        return OnePieceFrames.Rope.gold(density, radiusPx);
     }
 
-    private static final class Frame extends android.graphics.drawable.Drawable {
-        private final android.graphics.Paint a = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.graphics.Paint b = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
-        private final android.graphics.RectF r = new android.graphics.RectF();
-        private final float d;
-        private final boolean rope;
-        /** The corners' radius, or below 0 for AppAdapter.cornerRadius at the frame's width. */
-        private final float fixedRadius;
+    /** Luffy's vest red: the app being carried on the Apps screen. */
+    static final int RED = 0xFFD62828;
 
-        Frame(float density, boolean rope, float radiusPx) {
-            d = density;
-            this.rope = rope;
-            fixedRadius = radiusPx;
-            a.setStyle(android.graphics.Paint.Style.STROKE);
-            b.setStyle(android.graphics.Paint.Style.STROKE);
-            if (rope) {
-                a.setColor(GOLD);
-                a.setStrokeWidth(4.5f * d);
-                b.setColor(0xFFC8871A);
-                b.setStrokeWidth(4.5f * d);
-                b.setPathEffect(new android.graphics.DashPathEffect(new float[]{3.5f * d, 4f * d}, 0));
-            } else {
-                a.setColor(WOOD);
-                a.setStrokeWidth(4f * d);
-                b.setColor(0xFFC08A50);
-                b.setStrokeWidth(1.2f * d);
-            }
-        }
+    /** The carried app's ring on the Apps screen: a thicker red rope, apart from the gold rope of plain focus. */
+    static android.graphics.drawable.Drawable carried(float density, float radiusPx) {
+        return OnePieceFrames.Rope.red(density, radiusPx);
+    }
 
-        @Override
-        public void draw(@androidx.annotation.NonNull android.graphics.Canvas c) {
-            android.graphics.Rect bounds = getBounds();
-            float radius = fixedRadius >= 0f ? fixedRadius : AppAdapter.cornerRadius(bounds.width(), d);
-            float half = a.getStrokeWidth() / 2f;
-            r.set(bounds.left + half, bounds.top + half, bounds.right - half, bounds.bottom - half);
-            float rr = Math.max(0f, radius - half);
-            c.drawRoundRect(r, rr, rr, a);
-            if (!rope) {
-                float in = a.getStrokeWidth() + b.getStrokeWidth() / 2f;
-                r.set(bounds.left + in, bounds.top + in, bounds.right - in, bounds.bottom - in);
-                rr = Math.max(0f, radius - in);
-            }
-            c.drawRoundRect(r, rr, rr, b);
-        }
+    /** Aged parchment in a carved wooden frame (OnePieceFrames): the menus' and notes' sheet. */
+    static android.graphics.drawable.Drawable sheet(float density, float radiusPx) {
+        return new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
+                new OnePieceFrames.Paper(density, radiusPx), new OnePieceFrames.Wood(density, radiusPx)});
+    }
 
-        @Override public void setAlpha(int alpha) { }
-        @Override public void setColorFilter(android.graphics.ColorFilter cf) { }
-        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
+    /** A short note on a parchment slip at the bottom of the screen, in place of the system's grey toast. */
+    @SuppressWarnings("deprecation")   // Toast.setView: still shown while the app is in front, as it is here
+    static void toast(android.content.Context ctx, int text) {
+        float d = ctx.getResources().getDisplayMetrics().density;
+        TextView note = new TextView(ctx);
+        note.setText(text);
+        note.setTextColor(PAPER_INK);
+        note.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18);
+        note.setTypeface(ctx.getResources().getFont(R.font.pirata_one));
+        int padH = Math.round(22 * d), padV = Math.round(10 * d);
+        note.setPadding(padH, padV, padH, padV);
+        note.setBackground(sheet(d, 16 * d));
+        android.widget.Toast t = new android.widget.Toast(ctx.getApplicationContext());
+        t.setDuration(android.widget.Toast.LENGTH_SHORT);
+        t.setView(note);
+        t.show();
     }
 
     /**
@@ -202,11 +217,7 @@ final class OnePieceSkin {
      */
     static void parchment(View panel) {
         float d = panel.getResources().getDisplayMetrics().density;
-        android.graphics.drawable.GradientDrawable paper = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[]{PAPER, PAPER_DARK});
-        paper.setCornerRadius(18 * d);
-        paper.setStroke(Math.round(3 * d), WOOD);
-        panel.setBackground(paper);
+        panel.setBackground(sheet(d, 18 * d));
         android.content.res.ColorStateList ink = new android.content.res.ColorStateList(
                 new int[][]{{android.R.attr.state_focused}, {}}, new int[]{INK, PAPER_INK});
         if (panel instanceof ViewGroup) parchmentRows((ViewGroup) panel, ink, d);

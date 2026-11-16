@@ -280,8 +280,32 @@ public final class AppsActivity extends Activity {
             } catch (RuntimeException ignored) {
             }
         });
-        menu.showAsDropDown(anchor, 0, dp(10), Gravity.START);
+        if (onePiece) OnePieceSkin.parchment(panel);
+        showBesideAnchor(menu, panel, anchor);
         rows.getChildAt(0).requestFocus();
+    }
+
+    /**
+     * Below the tile, or above it when the screen's bottom edge would cut the menu off (the last row of apps), and
+     * kept inside the left and right edges. A WRAP_CONTENT popup does not know its height when showAsDropDown places
+     * it, so it never flipped up by itself: it is measured here first.
+     */
+    private void showBesideAnchor(android.widget.PopupWindow popup, View panel, View anchor) {
+        int width = popup.getWidth();
+        panel.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int height = panel.getMeasuredHeight();
+        View screen = getWindow().getDecorView();
+        int[] at = new int[2];
+        anchor.getLocationInWindow(at);
+        // The focused tile is scaled up by FOCUS_SCALE around its centre: clear what it grows by, plus the gap.
+        int grow = Math.round(anchor.getHeight() * (FOCUS_SCALE - 1f) / 2f);
+        int gap = dp(10) + grow, edge = dp(16);
+        int y = at[1] + anchor.getHeight() + gap;
+        if (y + height > screen.getHeight() - edge) y = at[1] - gap - height;   // no room below: above the tile
+        y = Math.max(edge, Math.min(y, screen.getHeight() - edge - height));
+        int x = Math.max(edge, Math.min(at[0], screen.getWidth() - edge - width));
+        popup.showAtLocation(anchor, Gravity.TOP | Gravity.START, x, y);
     }
 
     /** An app the owner installed: not part of the firmware, so Uninstall removes it rather than failing. */
@@ -339,7 +363,8 @@ public final class AppsActivity extends Activity {
         moving = pos;
         tiles.notifyItemChanged(pos);
         focusAt(pos);
-        android.widget.Toast.makeText(this, R.string.apps_move_hint, android.widget.Toast.LENGTH_SHORT).show();
+        if (onePiece) OnePieceSkin.toast(this, R.string.apps_move_hint);
+        else android.widget.Toast.makeText(this, R.string.apps_move_hint, android.widget.Toast.LENGTH_SHORT).show();
     }
 
     private void carry(int step) {
@@ -461,10 +486,16 @@ public final class AppsActivity extends Activity {
                 plain.setStroke(dp(3), Color.WHITE);
                 ring = plain;
             }
-            GradientDrawable carried = new GradientDrawable();
-            carried.setColor(Color.TRANSPARENT);
-            carried.setCornerRadius(dp(14));
-            carried.setStroke(dp(4), MOVE_ACCENT);
+            Drawable carried;
+            if (onePiece) {
+                carried = OnePieceSkin.carried(getResources().getDisplayMetrics().density, dp(14));
+            } else {
+                GradientDrawable plain = new GradientDrawable();
+                plain.setColor(Color.TRANSPARENT);
+                plain.setCornerRadius(dp(14));
+                plain.setStroke(dp(4), MOVE_ACCENT);
+                carried = plain;
+            }
             card.setTag(R.id.card, carried);
             card.setTag(ring);
             Holder holder = new Holder(item, card, art, name);
@@ -472,6 +503,7 @@ public final class AppsActivity extends Activity {
                 v.animate().cancel();
                 v.animate().scaleX(focused ? FOCUS_SCALE : 1f).scaleY(focused ? FOCUS_SCALE : 1f).setDuration(150).start();
                 card.setForeground(foregroundFor(card, focused, holder.getBindingAdapterPosition()));
+                if (focused && onePiece) OnePieceFrames.Rope.playIfRope(card.getForeground());
                 name.setVisibility(focused ? View.VISIBLE : View.INVISIBLE);
             });
             return holder;

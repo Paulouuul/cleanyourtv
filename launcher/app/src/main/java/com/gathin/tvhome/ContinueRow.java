@@ -244,10 +244,15 @@ final class ContinueRow extends LinearLayout {
         card.setContentDescription(appLabel(item.pkg) + ": " + item.title);
         // One Piece skin (pirateCaption): a "wanted poster", the picture on a sheet of parchment over a caption.
         boolean poster = pirateCaption;
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(poster ? OnePieceSkin.PAPER : 0xFF1E2433);
-        bg.setCornerRadius(dp(12));
-        card.setBackground(bg);
+        if (poster) {
+            // Aged parchment with grain, toasted edges and a hatched cel shadow (OnePieceFrames.Paper).
+            card.setBackground(new OnePieceFrames.Paper(density, dp(12)));
+        } else {
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(0xFF1E2433);
+            bg.setCornerRadius(dp(12));
+            card.setBackground(bg);
+        }
         card.setOutlineProvider(new ViewOutlineProvider() {
             @Override
             public void getOutline(View view, Outline outline) {
@@ -294,9 +299,18 @@ final class ContinueRow extends LinearLayout {
         text.setOrientation(VERTICAL);
         text.setPadding(dp(10), 0, dp(10), dp(item.progress >= 0 ? 10 : 8));
         TextView name = label(item.title, 14, poster ? OnePieceSkin.PAPER_INK : 0xFFFFFFFF, R.string.font_medium);
+        if (poster) {
+            // The poster's title in the pirate face, inked, with a soft light edge like a printed bill.
+            name.setTypeface(getResources().getFont(R.font.pirata_one));
+            name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18 * scale);
+            name.setLetterSpacing(0.02f);
+            name.setShadowLayer(1.5f * density, 0f, 1f * density, 0x99FFF6DC);
+        }
         text.addView(name);
         if (!item.subtitle.isEmpty()) {
-            text.addView(label(item.subtitle, 11, poster ? 0xCC5A3A1E : 0xB3FFFFFF, R.string.font_regular));
+            TextView sub = label(item.subtitle, 11, poster ? 0xE05A3A1E : 0xB3FFFFFF, R.string.font_regular);
+            if (poster) sub.setShadowLayer(1f * density, 0f, 0.8f * density, 0x80FFF6DC);
+            text.addView(sub);
         }
         card.addView(text, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
@@ -321,10 +335,16 @@ final class ContinueRow extends LinearLayout {
 
         if (item.progress >= 0) {
             View track = new View(ctx);
-            track.setBackgroundColor(poster ? 0x335A3A1E : 0x40FFFFFF);
+            track.setBackgroundColor(poster ? 0x405A3A1E : 0x40FFFFFF);
             card.addView(track, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3), Gravity.BOTTOM));
             View bar = new View(ctx);
-            bar.setBackgroundColor(poster ? 0xFFC0392B : Color.WHITE);
+            if (poster) {
+                // A burning fuse: red to orange with a bright tip.
+                bar.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                        new int[]{0xFF8E1414, 0xFFD62828, 0xFFFF9A2E}));
+            } else {
+                bar.setBackgroundColor(Color.WHITE);
+            }
             FrameLayout.LayoutParams blp = new FrameLayout.LayoutParams(0, dp(3), Gravity.BOTTOM | Gravity.START);
             card.addView(bar, blp);
             card.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
@@ -343,21 +363,9 @@ final class ContinueRow extends LinearLayout {
         ring.setColor(Color.TRANSPARENT);
         Drawable focusRing = ring, restRing = null;
         if (poster) {
-            // The poster's wooden edge at rest, the gold rope under focus.
-            GradientDrawable edge = new GradientDrawable();
-            edge.setCornerRadius(dp(12));
-            edge.setStroke(Math.max(1, dp(2)), OnePieceSkin.WOOD);
-            edge.setColor(Color.TRANSPARENT);
-            restRing = edge;
-            GradientDrawable gold = new GradientDrawable();
-            gold.setCornerRadius(dp(12));
-            gold.setStroke(dp(4), OnePieceSkin.GOLD);
-            gold.setColor(Color.TRANSPARENT);
-            GradientDrawable twist = new GradientDrawable();
-            twist.setCornerRadius(dp(12));
-            twist.setStroke(dp(4), 0xFFC8871A, 3.5f * density * scale, 4f * density * scale);
-            twist.setColor(Color.TRANSPARENT);
-            focusRing = new android.graphics.drawable.LayerDrawable(new Drawable[]{gold, twist});
+            // The poster's carved wooden frame at rest, the twisted gold rope (with its focus move) under focus.
+            restRing = OnePieceSkin.woodFrame(density, dp(12));
+            focusRing = OnePieceSkin.rope(density, dp(12));
             card.setForeground(restRing);
         }
         final Drawable onFocus = focusRing, atRest = restRing;
@@ -366,6 +374,7 @@ final class ContinueRow extends LinearLayout {
             float zoom = focused ? focusScale(v) : 1f;
             v.animate().scaleX(zoom).scaleY(zoom).setDuration(150).start();
             card.setForeground(focused ? onFocus : atRest);
+            if (focused) OnePieceFrames.Rope.playIfRope(onFocus);
             // A stray focus also lands here; strayFocus has already queued the move back to the dock, which puts
             // the glass and the title back.
             if (focused) {
