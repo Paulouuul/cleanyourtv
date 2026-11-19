@@ -25,7 +25,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN pois päältä</string>
     <string name="home_settings">Valitse oletuskotinäkymä</string>
-    <string name="home_settings_help">Valitse alkuperäinen kotinäkymä, jos haluat lopettaa CleanYourTV:n käytön kotinäkymänä, tai CleanYourTV palataksesi siihen. Alkuperäisen käynnistimen on oltava käytössä ja television on tarjottava kotinäkymän valinta. Jos käynnistin on poistettu käytöstä, aja ensin palautusskripti.</string>
+    <string name="home_settings_help">Valitse alkuperäinen kotinäkymä, jos haluat lopettaa “Koti”:n käytön kotinäkymänä, tai “Koti” palataksesi siihen. Alkuperäisen käynnistimen on oltava käytössä ja television on tarjottava kotinäkymän valinta. Jos käynnistin on poistettu käytöstä, aja ensin palautusskripti.</string>
     <string name="launcher_settings">Käynnistimen asetukset</string>
     <string name="native_settings">Valmistajan asetukset</string>
     <string name="columns_label">Sovelluksia rivillä</string>
@@ -92,7 +92,10 @@
         <item quantity="other">%1$d sovellusta</item>
     </plurals>
     <string name="dock_edit">Muokkaa telakkaa</string>
-    <string name="power_menu">Käynnistä uudelleen…</string>
+    <string name="power_menu">Sammuta tai käynnistä uudelleen…</string>
+    <string name="power_off">Sammuta</string>
+    <string name="power_restart">Käynnistä uudelleen</string>
+    <string name="skin_state">Teeman ulkoasu: %1$s</string>
     <string name="dock_edit_hint">Valitse muutettava telakan paikka ja paina OK. Takaisin lopettaa.</string>
     <string name="dock_edit_pick_app">Valitse nyt sinne tuleva sovellus ja paina OK. Takaisin valitsee toisen paikan.</string>
     <string name="tile_add_to_dock">Lisää telakkaan</string>

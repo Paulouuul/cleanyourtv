@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The One Piece build's app icon, foreground: the Straw Hat crew's jolly roger, a skull in a straw hat over
+     crossed bones, in ink-lined cel colours like the skin's icons. Kept in the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Crossed bones: ink, then bone white. -->
+    <path android:strokeColor="#FF24150A" android:strokeWidth="8.6" android:strokeLineCap="round"
+        android:pathData="M32,82L76,50M76,82L32,50" />
+    <path android:strokeColor="#FFF4EEE2" android:strokeWidth="5.4" android:strokeLineCap="round"
+        android:pathData="M32,82L76,50M76,82L32,50" />
+    <path android:fillColor="#FFF4EEE2" android:strokeColor="#FF24150A" android:strokeWidth="1.6"
+        android:pathData="M28.5,80.5a4,4 0,1 1,5.5 5.5a4,4 0,1 1,-5.5 -5.5zM74,84a4,4 0,1 1,5.5 -5.5a4,4 0,1 1,-5.5 5.5zM79.5,51.5a4,4 0,1 1,-5.5 -5.5a4,4 0,1 1,5.5 5.5zM34,46a4,4 0,1 1,-5.5 5.5a4,4 0,1 1,5.5 -5.5z" />
+    <!-- Skull and jaw. -->
+    <path android:strokeColor="#FF24150A" android:strokeWidth="1.8"
+        android:pathData="M54,36c10.5,0 18,7.5 18,17c0,5.5 -2.6,9.6 -6.4,12.2v6.3c0,2 -1.6,3.5 -3.5,3.5h-16.2c-1.9,0 -3.5,-1.5 -3.5,-3.5v-6.3c-3.8,-2.6 -6.4,-6.7 -6.4,-12.2c0,-9.5 7.5,-17 18,-17z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="40" android:startY="38" android:endX="66" android:endY="74"
+                android:startColor="#FFFFFFFF" android:endColor="#FFE2D9C8" />
+        </aapt:attr>
+    </path>
+    <!-- Eyes, nose, teeth. -->
+    <path android:fillColor="#FF24150A"
+        android:pathData="M46.5,50.5a4.6,5 0,1 0,0.01 0zM61.5,50.5a4.6,5 0,1 0,0.01 0zM54,59.5l-2.4,4h4.8z" />
+    <path android:strokeColor="#FF24150A" android:strokeWidth="1.3" android:strokeLineCap="round"
+        android:pathData="M46.5,68.5h15M50,66v8M54,66v8.5M58,66v8" />
+    <!-- Straw hat: crown, red band, brim. -->
+    <path android:strokeColor="#FF24150A" android:strokeWidth="1.8"
+        android:pathData="M38.5,42c0.4,-9 6.5,-14.5 15.5,-14.5s15.1,5.5 15.5,14.5z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="42" android:startY="28" android:endX="64" android:endY="44"
+                android:startColor="#FFFFE38A" android:endColor="#FFE9B442" />
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#FFE53935" android:strokeColor="#FF24150A" android:strokeWidth="1.2"
+        android:pathData="M38.8,37.2c9.5,1.6 21,1.6 30.4,0l0.3,4.8c-10,1.6 -21,1.6 -31,0z" />
+    <path android:strokeColor="#FF24150A" android:strokeWidth="1.8"
+        android:pathData="M54,39c14.4,0 26,2.9 26,6.5s-11.6,6.5 -26,6.5s-26,-2.9 -26,-6.5s11.6,-6.5 26,-6.5z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="30" android:startY="40" android:endX="78" android:endY="52"
+                android:startColor="#FFFFE38A" android:endColor="#FFD9A441" />
+        </aapt:attr>
+    </path>
+    <!-- The skull shows through the brim's opening, the hat sitting on it. -->
+    <path android:strokeColor="#FF24150A" android:strokeWidth="1.4"
+        android:pathData="M39,46c4.5,-2.4 25.5,-2.4 30,0c-4,2 -26,2 -30,0z" android:fillColor="#FFF4EEE2" />
+    <!-- Straw strokes and a glint. -->
+    <path android:strokeColor="#88A0701E" android:strokeWidth="0.9" android:strokeLineCap="round"
+        android:pathData="M46,31.5l-1.4,5M51,29l-0.6,7.5M57,29l0.6,7.5M62,31.5l1.4,5" />
+    <path android:strokeColor="#CCFFFFFF" android:strokeWidth="1.4" android:strokeLineCap="round"
+        android:pathData="M44,33.5c1.2,-2 2.8,-3.2 4.6,-3.8" />
+</vector>

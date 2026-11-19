@@ -132,6 +132,13 @@
             <TextView android:id="@+id/clock24" style="@style/SettingsColumnChoice" android:text="@string/clock_format_24" />
         </LinearLayout>
 
+        <!-- Shown only when the theme names a skin: switches it off and on (Config.SKIN_OFF_KEY). -->
+        <TextView
+            android:id="@+id/skinChoice"
+            style="@style/SettingsRow"
+            android:layout_marginTop="28dp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/wallpaperChoice"
             style="@style/SettingsRow"

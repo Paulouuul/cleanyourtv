@@ -45,7 +45,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN вимкнено</string>
     <string name="home_settings">Головний екран за замовчуванням</string>
-    <string name="home_settings_help">Виберіть оригінальний головний екран, щоб більше не використовувати CleanYourTV як головний екран, або CleanYourTV, щоб повернутися. Оригінальний головний екран має бути увімкнений, а телевізор має показувати вибір головного екрана; якщо його було вимкнено, спершу скористайтеся скриптом відновлення.</string>
+    <string name="home_settings_help">Виберіть оригінальний головний екран, щоб більше не використовувати “Головний екран” як головний екран, або “Головний екран”, щоб повернутися. Оригінальний головний екран має бути увімкнений, а телевізор має показувати вибір головного екрана; якщо його було вимкнено, спершу скористайтеся скриптом відновлення.</string>
     <string name="launcher_settings">Налаштування лаунчера</string>
     <string name="native_settings">Налаштування виробника</string>
     <string name="columns_label">Застосунків у рядку</string>
@@ -94,7 +94,10 @@
     <string name="card_state_new_key">Новий ключ</string>
     <string name="card_state_new_label">Нова назва</string>
     <string name="dock_edit">Редагувати док</string>
-    <string name="power_menu">Перезапустити…</string>
+    <string name="power_menu">Вимкнути або перезапустити…</string>
+    <string name="power_off">Вимкнути</string>
+    <string name="power_restart">Перезапустити</string>
+    <string name="skin_state">Оформлення теми: %1$s</string>
     <string name="dock_edit_hint">Виберіть місце в доку, яке треба змінити, і натисніть OK. «Назад» — завершити.</string>
     <string name="dock_edit_pick_app">Тепер виберіть застосунок для цього місця та натисніть OK. «Назад» — вибрати інше місце.</string>
     <string name="tile_add_to_dock">Додати в док</string>

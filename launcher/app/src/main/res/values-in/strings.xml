@@ -26,7 +26,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN mati</string>
     <string name="home_settings">Pilih Beranda utama</string>
-    <string name="home_settings_help">Pilih beranda asli untuk berhenti menggunakan CleanYourTV sebagai Beranda, atau CleanYourTV untuk kembali. Antarmuka asli harus aktif dan TV Anda harus menyediakan pemilih beranda; gunakan skrip pemulihan terlebih dahulu jika sebelumnya dinonaktifkan.</string>
+    <string name="home_settings_help">Pilih beranda asli untuk berhenti menggunakan “Beranda” sebagai Beranda, atau “Beranda” untuk kembali. Antarmuka asli harus aktif dan TV Anda harus menyediakan pemilih beranda; gunakan skrip pemulihan terlebih dahulu jika sebelumnya dinonaktifkan.</string>
     <string name="launcher_settings">Setelan antarmuka</string>
     <string name="native_settings">Setelan pabrikan</string>
     <string name="columns_label">App per baris</string>
@@ -76,7 +76,10 @@
     <string name="card_state_new_key">Kunci baru</string>
     <string name="card_state_new_label">Nama baru</string>
     <string name="dock_edit">Setel Dock</string>
-    <string name="power_menu">Mulai ulang…</string>
+    <string name="power_menu">Matikan atau mulai ulang…</string>
+    <string name="power_off">Matikan</string>
+    <string name="power_restart">Mulai ulang</string>
+    <string name="skin_state">Skin tema: %1$s</string>
     <string name="dock_edit_hint">Pilih posisi dock yang ingin diubah lalu tekan OK. Kembali untuk selesai.</string>
     <string name="dock_edit_pick_app">Sekarang pilih aplikasi untuk ditempatkan di sana lalu tekan OK. Kembali untuk memilih posisi lain.</string>
     <string name="tile_add_to_dock">Tambah ke dock</string>

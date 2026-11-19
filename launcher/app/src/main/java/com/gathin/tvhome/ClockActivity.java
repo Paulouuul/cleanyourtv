@@ -19,15 +19,24 @@ public class ClockActivity extends Activity {
 
 
     private ClockScene scene;
+    /** One Piece skin: the opening on a loop with the clock under its logo, as the screensaver. */
+    private OnePieceScreensaver skin;
 
     @Override
     @SuppressWarnings("deprecation")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.dream_clock);
-        ClockFormat.apply(getWindow().getDecorView(), Config.load(this).clockFormat);
+        Config cfg = Config.load(this);
+        if (OnePieceSkin.on(cfg)) {
+            skin = new OnePieceScreensaver(this, cfg);
+            setContentView(skin.root);
+        } else {
+            setContentView(R.layout.dream_clock);
+        }
+        ClockFormat.apply(getWindow().getDecorView(), cfg.clockFormat);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE);
+        if (skin != null) return;
         scene = new ClockScene(getWindow().getDecorView());
         scene.useHomeWallpaper(this);
     }
@@ -35,12 +44,14 @@ public class ClockActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        scene.start();
+        if (skin != null) skin.start();
+        else scene.start();
     }
 
     @Override
     protected void onPause() {
-        scene.stop();
+        if (skin != null) skin.stop();
+        else scene.stop();
         super.onPause();
         finish();   // never left behind in the back stack
     }

@@ -21,6 +21,11 @@ import android.view.View;
  * Google TV logos come before it and cannot be changed without root). Deep sea, gold rays turning, manga speed lines
  * as the logo lands with a bounce, a shine across the logo, sparkles and foam waves; then it fades into Home. Any key
  * skips it. About 3.6 s; with reduced motion, a still logo that fades.
+ *
+ * As the skin's screensaver ({@link #OnePieceIntro(Context, boolean, Runnable, boolean)} with loop) it plays the same
+ * opening and then keeps the sea alive: the rays turn, the waves roll, the logo breathes, larger, in the middle (the
+ * time is a small line in a corner), and every few seconds the shine and the sparkles come back. The logo drifts slowly (and reports
+ * it through {@link Drift}, for the time to follow) so nothing burns in, at about 25 frames a second after the opening.
  */
 final class OnePieceIntro extends View {
 
@@ -53,9 +58,21 @@ final class OnePieceIntro extends View {
     /** Elapsed time, in ms. */
     private float ms;
     private boolean ending;
+    private final boolean loop;
+    private Drift drift;
+
+    /** Where the screensaver's logo has drifted to, for the clock under it to follow. */
+    interface Drift {
+        void moved(float dx, float dy);
+    }
 
     OnePieceIntro(Context ctx, boolean reducedMotion, Runnable onEnd) {
+        this(ctx, reducedMotion, onEnd, false);
+    }
+
+    OnePieceIntro(Context ctx, boolean reducedMotion, Runnable onEnd, boolean loop) {
         super(ctx);
+        this.loop = loop;
         d = ctx.getResources().getDisplayMetrics().density;
         reduced = reducedMotion;
         this.onEnd = onEnd;
@@ -70,6 +87,11 @@ final class OnePieceIntro extends View {
      * unseen under it. Starts once init.svc.bootanim reads "stopped" (or cannot be read), at most 15 s after.
      */
     void start() {
+        if (loop) {
+            startedAt = SystemClock.uptimeMillis();
+            postInvalidateOnAnimation();
+            return;
+        }
         long since = SystemClock.uptimeMillis();
         Runnable check = new Runnable() {
             @Override public void run() {
@@ -101,9 +123,20 @@ final class OnePieceIntro extends View {
     }
 
     /** Advances the clock each frame; ends after {@link #total}, or after the short fade a key started. */
+    void setDrift(Drift drift) {
+        this.drift = drift;
+    }
+
     private boolean tick() {
         if (startedAt < 0L) return false;
         long now = SystemClock.uptimeMillis();
+        if (loop) {
+            ms = now - startedAt;
+            // After the opening the sea moves slowly: 25 frames a second is plenty and spares a 1 GB TV.
+            if (ms > 3200f) postInvalidateDelayed(40);
+            else postInvalidateOnAnimation();
+            return true;
+        }
         ms = Math.min(total, now - startedAt);
         if (fadeStartedAt >= 0L) {
             float k = clamp((now - fadeStartedAt) / 220f);
@@ -148,9 +181,16 @@ final class OnePieceIntro extends View {
             return;
         }
         if (!tick()) return;
-        float cx = w / 2f, cy = h * 0.46f;
-        // The whole opening fades into Home over its last 600 ms.
-        float out = clamp((total - ms) / (reduced ? 500f : 600f));
+        float dx = 0f, dy = 0f;
+        if (loop) {
+            dx = (float) Math.sin(ms / 53000.0 * Math.PI * 2) * 28f * d;
+            dy = (float) Math.sin(ms / 71000.0 * Math.PI * 2) * 12f * d;
+            if (drift != null) drift.moved(dx, dy);
+        }
+        float cx = w / 2f + dx, cy = h * (loop ? 0.47f : 0.46f) + dy;
+        float size = 1f;
+        // The whole opening fades into Home over its last 600 ms; the screensaver never fades.
+        float out = loop ? 1f : clamp((total - ms) / (reduced ? 500f : 600f));
 
         // Deep sea, lit from where the logo lands.
         p.setShader(new RadialGradient(cx, cy, Math.max(w, h) * 0.75f, new int[]{0xFF1E5A8C, 0xFF0B2A4A, 0xFF04121F},
@@ -160,7 +200,8 @@ final class OnePieceIntro extends View {
         p.setShader(null);
 
         if (reduced) {
-            drawLogo(c, cx, cy, 1f, 0f, out);
+            drawLogo(c, cx, cy, size, 0f, out);
+            if (loop) waves(c, w, h, 1f);
             return;
         }
 
@@ -207,17 +248,23 @@ final class OnePieceIntro extends View {
         // The logo: drops in from small with a bounce (0.3 to 1.1 s), then breathes a little.
         float land = clamp((ms - 300f) / 800f);
         if (land > 0f) {
-            float scale = easeOutBack(land) * (1f + 0.012f * (float) Math.sin(ms / 420f));
+            float scale = size * easeOutBack(land) * (1f + 0.012f * (float) Math.sin(ms / 420f));
             float tilt = (1f - land) * -8f;
             float shine = window(ms, 1150f, 1950f) > 0f ? clamp((ms - 1150f) / 800f) : -1f;
+            if (loop && ms > 1950f) {
+                // The screensaver: the shine crosses the logo again every 9 s.
+                float cycle = (ms - 1150f) % 9000f;
+                shine = cycle < 800f ? cycle / 800f : -1f;
+            }
             drawLogo(c, cx, cy, scale, tilt, Math.min(clamp(land * 2f), out), shine);
         }
 
-        // Sparkles round the logo (1.2 to 3 s).
-        sparkle(c, cx - w * 0.21f, cy - h * 0.13f, window(ms, 1200f, 2000f) * out, 14f);
-        sparkle(c, cx + w * 0.22f, cy - h * 0.09f, window(ms, 1450f, 2300f) * out, 18f);
-        sparkle(c, cx + w * 0.17f, cy + h * 0.15f, window(ms, 1800f, 2700f) * out, 12f);
-        sparkle(c, cx - w * 0.16f, cy + h * 0.13f, window(ms, 2100f, 3000f) * out, 15f);
+        // Sparkles round the logo (1.2 to 3 s; the screensaver brings them back every 7 s).
+        float st = loop && ms > 3000f ? 1200f + (ms - 3000f) % 7000f : ms;
+        sparkle(c, cx - w * 0.21f * size, cy - h * 0.13f * size, window(st, 1200f, 2000f) * out, 14f);
+        sparkle(c, cx + w * 0.22f * size, cy - h * 0.09f * size, window(st, 1450f, 2300f) * out, 18f);
+        sparkle(c, cx + w * 0.17f * size, cy + h * 0.15f * size, window(st, 1800f, 2700f) * out, 12f);
+        sparkle(c, cx - w * 0.16f * size, cy + h * 0.13f * size, window(st, 2100f, 3000f) * out, 15f);
 
         // Foam waves rolling along the bottom.
         waves(c, w, h, clamp(ms / 600f) * out);
@@ -230,7 +277,9 @@ final class OnePieceIntro extends View {
     /** The logo at most a little over its own pixel size (it stays crisp), with an optional shine at {@code shine}. */
     private void drawLogo(Canvas c, float cx, float cy, float scale, float tilt, float alpha, float shine) {
         if (logo == null || alpha <= 0f) return;
-        float lw = Math.min(getWidth() * 0.48f, logo.getWidth() * 1.15f);
+        // The screensaver's logo fills more of the screen (the time sits small in a corner there).
+        float lw = loop ? Math.min(getWidth() * 0.7f, logo.getWidth() * 1.7f)
+                : Math.min(getWidth() * 0.48f, logo.getWidth() * 1.15f);
         float lh = lw * logo.getHeight() / logo.getWidth();
         int save = c.save();
         c.rotate(tilt, cx, cy);
@@ -238,9 +287,11 @@ final class OnePieceIntro extends View {
         r.set(cx - lw / 2f, cy - lh / 2f, cx + lw / 2f, cy + lh / 2f);
         // A soft dark glow behind it so it reads over the rays.
         fx.setStyle(Paint.Style.FILL);
-        fx.setShader(new RadialGradient(cx, cy, lw * 0.62f, 0x99041220, 0x00041220, Shader.TileMode.CLAMP));
+        fx.setShader(new RadialGradient(cx, cy, lw * (loop ? 0.55f : 0.62f), 0x99041220, 0x00041220, Shader.TileMode.CLAMP));
         fx.setAlpha(Math.round(255 * alpha));
-        c.drawOval(cx - lw * 0.62f, cy - lh * 0.9f, cx + lw * 0.62f, cy + lh * 0.9f, fx);
+        // The screensaver's large logo keeps its shade lower, clear of the time in the top corner.
+        float shade = loop ? 0.72f : 0.9f;
+        c.drawOval(cx - lw * 0.62f, cy - lh * shade, cx + lw * 0.62f, cy + lh * shade, fx);
         fx.setShader(null);
         int layer = c.saveLayer(r.left - 4, r.top - 4, r.right + 4, r.bottom + 4, null);
         p.setAlpha(Math.round(255 * alpha));

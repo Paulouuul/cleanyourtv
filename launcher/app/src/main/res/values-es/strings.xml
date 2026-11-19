@@ -59,7 +59,10 @@
     <string name="off">No</string>
     <string name="enable">Activar</string>
     <string name="dock_edit">Editar el dock</string>
-    <string name="power_menu">Reiniciar…</string>
+    <string name="power_menu">Apagar o reiniciar…</string>
+    <string name="power_off">Apagar</string>
+    <string name="power_restart">Reiniciar</string>
+    <string name="skin_state">Skin del tema: %1$s</string>
     <string name="dock_edit_hint">Elige el hueco del dock que quieres cambiar y pulsa OK. Atrás para terminar.</string>
     <string name="dock_edit_pick_app">Ahora elige la app que quieres poner ahí y pulsa OK. Atrás para elegir otro hueco.</string>
     <string name="tile_add_to_dock">Añadir al dock</string>
@@ -88,7 +91,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN apagada</string>
     <string name="home_settings">Elegir inicio predeterminado</string>
-    <string name="home_settings_help">Elige tu inicio original para dejar de usar CleanYourTV como inicio, o CleanYourTV para volver a él. El lanzador original tiene que estar activado y el televisor debe ofrecer un selector de inicio; si estaba desactivado, usa antes el script de restauración.</string>
+    <string name="home_settings_help">Elige tu inicio original para dejar de usar “Inicio” como inicio, o “Inicio” para volver a él. El lanzador original tiene que estar activado y el televisor debe ofrecer un selector de inicio; si estaba desactivado, usa antes el script de restauración.</string>
     <string name="rows_below_dock_label">Filas debajo del dock</string>
     <string name="wallpaper_label">Fondo</string>
     <string name="wallpaper_state">Fondo: %1$s</string>

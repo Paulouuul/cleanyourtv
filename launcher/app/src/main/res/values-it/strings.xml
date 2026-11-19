@@ -45,7 +45,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN disattivata</string>
     <string name="home_settings">Scegli la home predefinita</string>
-    <string name="home_settings_help">Seleziona la home originale per smettere di usare CleanYourTV come Home, oppure CleanYourTV per tornare indietro. Il launcher originale deve essere attivo e la TV deve offrire la scelta della home; se era disattivato, usa prima lo script di ripristino.</string>
+    <string name="home_settings_help">Seleziona la home originale per smettere di usare “Home” come Home, oppure “Home” per tornare indietro. Il launcher originale deve essere attivo e la TV deve offrire la scelta della home; se era disattivato, usa prima lo script di ripristino.</string>
     <string name="launcher_settings">Impostazioni del launcher</string>
     <string name="native_settings">Impostazioni del produttore</string>
     <string name="columns_label">App per riga</string>
@@ -95,7 +95,10 @@
     <string name="card_state_new_key">Nuova chiave</string>
     <string name="card_state_new_label">Nuovo nome</string>
     <string name="dock_edit">Modifica dock</string>
-    <string name="power_menu">Riavvia…</string>
+    <string name="power_menu">Spegni o riavvia…</string>
+    <string name="power_off">Spegni</string>
+    <string name="power_restart">Riavvia</string>
+    <string name="skin_state">Skin del tema: %1$s</string>
     <string name="dock_edit_hint">Scegli il posto del dock da cambiare e premi OK. Indietro per finire.</string>
     <string name="dock_edit_pick_app">Ora scegli l\'app da mettere lì e premi OK. Indietro per scegliere un altro posto.</string>
     <string name="tile_add_to_dock">Aggiungi al dock</string>

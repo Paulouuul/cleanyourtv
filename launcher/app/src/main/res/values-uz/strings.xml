@@ -27,7 +27,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN oʻchiq</string>
     <string name="home_settings">Asosiy bosh ekranni tanlash</string>
-    <string name="home_settings_help">CleanYourTV oʻrniga eski bosh ekranga qaytish uchun uni tanlang, CleanYourTV ga qaytish uchun esa CleanYourTV ni. Eski launcher yoqilgan boʻlishi va televizorda bosh ekran tanlash oynasi boʻlishi kerak; agar u oʻchirilgan boʻlsa, avval tiklash skriptini ishga tushiring.</string>
+    <string name="home_settings_help">“Bosh ekran” oʻrniga eski bosh ekranga qaytish uchun uni tanlang, “Bosh ekran” ga qaytish uchun esa “Bosh ekran” ni. Eski launcher yoqilgan boʻlishi va televizorda bosh ekran tanlash oynasi boʻlishi kerak; agar u oʻchirilgan boʻlsa, avval tiklash skriptini ishga tushiring.</string>
     <string name="launcher_settings">Launcher sozlamalari</string>
     <string name="native_settings">Ishlab chiqaruvchi sozlamalari</string>
     <string name="columns_label">Qatordagi ilovalar</string>
@@ -77,7 +77,10 @@
     <string name="card_state_new_key">Yangi kalit</string>
     <string name="card_state_new_label">Yangi nom</string>
     <string name="dock_edit">Dockni tahrirlash</string>
-    <string name="power_menu">Qayta ishga tushirish…</string>
+    <string name="power_menu">O‘chirish yoki qayta ishga tushirish…</string>
+    <string name="power_off">O‘chirish</string>
+    <string name="power_restart">Qayta ishga tushirish</string>
+    <string name="skin_state">Mavzu ko‘rinishi: %1$s</string>
     <string name="dock_edit_hint">Oʻzgartiriladigan joyni tanlab, OK ni bosing. Tugatish uchun Back.</string>
     <string name="dock_edit_pick_app">Endi u yerga qoʻyiladigan ilovani tanlab, OK ni bosing. Boshqa joy tanlash uchun Back.</string>
     <string name="tile_add_to_dock">Dockga qoʻshish</string>

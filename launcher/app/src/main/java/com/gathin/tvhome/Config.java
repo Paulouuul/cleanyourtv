@@ -44,6 +44,8 @@ final class Config {
     static final String WALLPAPER_CHOICE_KEY = "wallpaper_choice";
     static final String DOCK_OPACITY_KEY = "dock_opacity";
     static final String CLOCK_FORMAT_KEY = "clock_format";
+    /** Launcher settings: the theme's skin switched off on this TV, for the launcher's own look. */
+    static final String SKIN_OFF_KEY = "skin_off";
     /**
      * Counts the changes made in Launcher settings. Home remembers the count it was built with and rebuilds on
      * resume when it differs, however the settings were left (see MainActivity#onResume).
@@ -275,6 +277,8 @@ final class Config {
     final boolean headerWhite;
     /** The theme's skin (config.json "skin"): {@link OnePieceSkin#NAME}, or empty for the launcher's own look. */
     String skin = "";
+    /** The skin the theme names, even while it is switched off in Launcher settings (SKIN_OFF_KEY). */
+    String themeSkin = "";
     /** The clock screensaver over Home's wallpaper instead of the black glow (config.xml, clock_wallpaper). */
     final boolean clockWallpaper;
     /** How dark the clock screensaver's wallpaper is, 0 to 90 % (config.xml, clock_wallpaper_dim). */
@@ -736,7 +740,8 @@ final class Config {
                 Math.max(0, Math.min(600, openOnStartNetworkWait)), openOnStartOnWake, iconOnlyVpn, clockFormat, backOpensClock, glowSnap,
                 settingsKeyClearTask);
         // A theme's look beyond the keys above (theme "skin"): "one_piece" (OnePieceSkin), or empty for none.
-        loaded.skin = json == null ? "" : json.optString("skin", "").trim();
+        loaded.themeSkin = json == null ? "" : json.optString("skin", "").trim();
+        loaded.skin = choices.getBoolean(SKIN_OFF_KEY, false) ? "" : loaded.themeSkin;
         return loaded;
     }
 

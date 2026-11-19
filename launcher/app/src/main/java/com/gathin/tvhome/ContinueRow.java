@@ -150,11 +150,13 @@ final class ContinueRow extends LinearLayout {
         return isShowing() ? cardViews.get(0).getId() : View.NO_ID;
     }
 
-    /** OnePieceSkin: the caption in white with a deep-sea outline, readable over a bright wallpaper. */
+    /** OnePieceSkin: the caption in the skin's title-card lettering, readable over the sea. */
     void outlineCaption() {
-        OnePieceSkin.outline(title, density);
-        OnePieceSkin.pirateTitle(title);
+        // Off the map, so not the map lettering (Pirata One): the skin's title-card lettering, on the sea.
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22 * scale);
+        title.setIncludeFontPadding(false);
+        title.setLetterSpacing(0.03f);
+        OnePieceText.apply(title, OnePieceText.TITLE);
         pirateCaption = true;
     }
 
@@ -363,9 +365,11 @@ final class ContinueRow extends LinearLayout {
         ring.setColor(Color.TRANSPARENT);
         Drawable focusRing = ring, restRing = null;
         if (poster) {
-            // The poster's carved wooden frame at rest, the twisted gold rope (with its focus move) under focus.
-            restRing = OnePieceSkin.woodFrame(density, dp(12));
-            focusRing = OnePieceSkin.rope(density, dp(12));
+            // A card of the map, so a map's edge (no wood) at rest; under focus a gold gleam crosses it and a red X
+            // is stamped in its corner (CardMark), clear of the edge.
+            restRing = new OnePieceFrames.MapEdge(density, dp(12), true);
+            focusRing = new android.graphics.drawable.LayerDrawable(new Drawable[]{
+                    new OnePieceFrames.MapEdge(density, dp(12), true), new OnePieceFrames.CardMark(density, dp(12))});
             card.setForeground(restRing);
         }
         final Drawable onFocus = focusRing, atRest = restRing;
@@ -374,7 +378,9 @@ final class ContinueRow extends LinearLayout {
             float zoom = focused ? focusScale(v) : 1f;
             v.animate().scaleX(zoom).scaleY(zoom).setDuration(150).start();
             card.setForeground(focused ? onFocus : atRest);
-            if (focused) OnePieceFrames.Rope.playIfRope(onFocus);
+            if (focused && onFocus instanceof android.graphics.drawable.LayerDrawable) {
+                OnePieceFrames.CardMark.playIfCard(((android.graphics.drawable.LayerDrawable) onFocus).getDrawable(1));
+            }
             // A stray focus also lands here; strayFocus has already queued the move back to the dock, which puts
             // the glass and the title back.
             if (focused) {

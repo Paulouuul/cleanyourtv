@@ -109,8 +109,8 @@ public final class AppsActivity extends Activity {
             // The theme's solid colour, like Home's.
             page.setBackgroundResource(R.drawable.onepiece_ocean);
             OnePieceSkin.loadSounds(this);
-            OnePieceSkin.outline(title, getResources().getDisplayMetrics().density);
-            OnePieceSkin.pirateTitle(title);
+            title.setLetterSpacing(0.03f);
+            OnePieceText.apply(title, OnePieceText.TITLE);
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 44);
         }
 
@@ -259,7 +259,7 @@ public final class AppsActivity extends Activity {
         View anchor = getCurrentFocus();
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, null, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
-        menu = new android.widget.PopupWindow(panel, dp(220), ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        menu = new android.widget.PopupWindow(panel, dp(TileMenu.WIDTH_DP), ViewGroup.LayoutParams.WRAP_CONTENT, true);
         menu.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
         menu.setOutsideTouchable(true);
         menu.setElevation(0f);
@@ -295,16 +295,9 @@ public final class AppsActivity extends Activity {
         panel.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         int height = panel.getMeasuredHeight();
-        View screen = getWindow().getDecorView();
-        int[] at = new int[2];
-        anchor.getLocationInWindow(at);
-        // The focused tile is scaled up by FOCUS_SCALE around its centre: clear what it grows by, plus the gap.
-        int grow = Math.round(anchor.getHeight() * (FOCUS_SCALE - 1f) / 2f);
-        int gap = dp(10) + grow, edge = dp(16);
-        int y = at[1] + anchor.getHeight() + gap;
-        if (y + height > screen.getHeight() - edge) y = at[1] - gap - height;   // no room below: above the tile
-        y = Math.max(edge, Math.min(y, screen.getHeight() - edge - height));
-        int x = Math.max(edge, Math.min(at[0], screen.getWidth() - edge - width));
+        int[] place = TileMenu.place(anchor, getWindow().getDecorView(), width, height, FOCUS_SCALE,
+                getResources().getDisplayMetrics().density);
+        int x = place[0], y = place[1];
         popup.showAtLocation(anchor, Gravity.TOP | Gravity.START, x, y);
     }
 
@@ -322,6 +315,10 @@ public final class AppsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (onePiece) {
+            View screen = findViewById(android.R.id.content);
+            screen.postDelayed(() -> OnePieceText.playIn(screen), 350);
+        }
         if (tiles == null) return;
         PackageManager pm = getPackageManager();
         for (int i = tiles.apps.size() - 1; i >= 0; i--) {

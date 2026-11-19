@@ -48,7 +48,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN off</string>
     <string name="home_settings">Choose default home</string>
-    <string name="home_settings_help">Select your original home to stop using CleanYourTV as Home, or CleanYourTV to switch back. The original launcher must be enabled and your TV must provide a home picker; use the restore script first if it was disabled.</string>
+    <string name="home_settings_help">Select your original home to stop using this launcher as Home, or this launcher (“Home” in the list) to switch back. The original launcher must be enabled and your TV must provide a home picker; use the restore script first if it was disabled.</string>
     <string name="launcher_settings">Launcher settings</string>
     <string name="native_settings">Native settings</string>
     <string name="columns_label">Apps per row</string>
@@ -105,8 +105,13 @@
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
     <string name="dock_edit">Edit dock</string>
-    <!-- Settings menu: opens the system power menu (Restart on most TVs). -->
-    <string name="power_menu">Restart…</string>
+    <!-- Settings menu: opens the system power menu, with Power off and Restart. -->
+    <string name="power_menu">Power off or restart…</string>
+    <!-- The launcher's power menu: its two buttons. Power off puts the TV in standby. -->
+    <string name="power_off">Power off</string>
+    <string name="power_restart">Restart</string>
+    <!-- Launcher settings, shown only when the theme has a skin: %s is On or Off. -->
+    <string name="skin_state">Theme skin: %1$s</string>
     <string name="dock_edit_hint">Choose the dock place to change and press OK. Back to finish.</string>
     <string name="dock_edit_pick_app">Now choose the app to put there and press OK. Back to choose another place.</string>
     <string name="tile_add_to_dock">Add to dock</string>

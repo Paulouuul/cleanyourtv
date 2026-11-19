@@ -28,7 +28,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN uit</string>
     <string name="home_settings">Standaard startscherm kiezen</string>
-    <string name="home_settings_help">Kies je oorspronkelijke startscherm om CleanYourTV niet meer als Home te gebruiken, of CleanYourTV om terug te schakelen. De oorspronkelijke launcher moet ingeschakeld zijn en je tv moet een keuzescherm voor het startscherm hebben; gebruik eerst het herstelscript als hij uitgeschakeld is.</string>
+    <string name="home_settings_help">Kies je oorspronkelijke startscherm om “Home” niet meer als Home te gebruiken, of “Home” om terug te schakelen. De oorspronkelijke launcher moet ingeschakeld zijn en je tv moet een keuzescherm voor het startscherm hebben; gebruik eerst het herstelscript als hij uitgeschakeld is.</string>
     <string name="launcher_settings">Launcher-instellingen</string>
     <string name="native_settings">Fabrikantinstellingen</string>
     <string name="columns_label">Apps per rij</string>
@@ -78,7 +78,10 @@
     <string name="card_state_new_key">Nieuwe sleutel</string>
     <string name="card_state_new_label">Nieuwe naam</string>
     <string name="dock_edit">Dock bewerken</string>
-    <string name="power_menu">Opnieuw opstarten…</string>
+    <string name="power_menu">Uitzetten of opnieuw opstarten…</string>
+    <string name="power_off">Uitzetten</string>
+    <string name="power_restart">Opnieuw opstarten</string>
+    <string name="skin_state">Skin van het thema: %1$s</string>
     <string name="dock_edit_hint">Kies de plek in het dock die je wilt wijzigen en druk op OK. Terug om te stoppen.</string>
     <string name="dock_edit_pick_app">Kies nu de app voor die plek en druk op OK. Terug om een andere plek te kiezen.</string>
     <string name="tile_add_to_dock">Toevoegen aan dock</string>

@@ -45,8 +45,9 @@ Click **Settings** for the TV's own settings. Hold OK on it for its menu:
 - **Edit dock**, with `dock_row`.
 - **Reorder apps**: OK picks an app up, the arrows move it, Back places it, and Back again finishes.
   With `tile_menu` (on by default since 3.3), holding OK on a tile offers **Move**, which picks that app up straight away.
-- **Restart…** while `HomeKeyService` runs, which opens the system power menu (a launcher may not
-  restart the TV itself).
+- **Power off or restart…** while `HomeKeyService` runs: the launcher's own menu with **Power off**
+  (standby) and **Restart**, which the helper carries out (a launcher may not restart the TV itself; Android's
+  power menu is the phone layout, which a D-pad cannot use).
 
 The launcher's own page has these rows, top to bottom:
 
@@ -58,6 +59,9 @@ The launcher's own page has these rows, top to bottom:
   its own row (`dock_row`, on by default).
 - **Clock**: **System** follows the TV's 12- or 24-hour setting; **12-hour** or **24-hour** sets the launcher's
   clocks (Home and the clock screensaver) to that, whatever the TV uses (`clock_format` in a theme).
+- **Theme skin** on or off, only when the theme names a skin (`"skin"` in its `config.json`): off gives the
+  launcher's own look until it is switched on again or Follow theme is pressed. With the One Piece skin the
+  Wallpaper row is left out, as the skin paints its own sea.
 - **Wallpaper**: one picture from the theme's collection (or its `wallpaper.jpg`), **None**, or **Theme
   default**. A pick holds that picture and stops the rotation until you choose Theme default, press
   Follow theme, or push the theme again.

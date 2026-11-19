@@ -27,7 +27,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN er av</string>
     <string name="home_settings">Velg standard startskjerm</string>
-    <string name="home_settings_help">Velg den opprinnelige startskjermen for å slutte å bruke CleanYourTV, eller velg CleanYourTV for å bytte tilbake. Den opprinnelige startskjermen må være aktivert, og TV-en må støtte valg av startskjerm. Kjør tilbakeføringsskriptet først hvis den ble deaktivert.</string>
+    <string name="home_settings_help">Velg den opprinnelige startskjermen for å slutte å bruke “Hjem”, eller velg “Hjem” for å bytte tilbake. Den opprinnelige startskjermen må være aktivert, og TV-en må støtte valg av startskjerm. Kjør tilbakeføringsskriptet først hvis den ble deaktivert.</string>
     <string name="launcher_settings">Innstillinger for startskjermen</string>
     <string name="native_settings">Produsentinnstillinger</string>
     <string name="columns_label">Apper per rad</string>
@@ -77,7 +77,10 @@
     <string name="card_state_new_key">Ny nøkkel</string>
     <string name="card_state_new_label">Nytt navn</string>
     <string name="dock_edit">Rediger favorittraden</string>
-    <string name="power_menu">Start på nytt…</string>
+    <string name="power_menu">Slå av eller start på nytt…</string>
+    <string name="power_off">Slå av</string>
+    <string name="power_restart">Start på nytt</string>
+    <string name="skin_state">Temaets utseende: %1$s</string>
     <string name="dock_edit_hint">Velg plassen du vil endre i favorittraden, og trykk OK. Trykk Tilbake for å avslutte.</string>
     <string name="dock_edit_pick_app">Velg appen du vil plassere der, og trykk OK. Trykk Tilbake for å velge en annen plass.</string>
     <string name="tile_add_to_dock">Legg til i favorittraden</string>

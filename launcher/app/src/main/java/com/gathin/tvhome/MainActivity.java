@@ -1200,6 +1200,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onResume() {
         super.onResume();
         homeResumed = true;
+        // One Piece skin: the clock's and the titles' gleam crosses them as Home comes into view.
+        if (onePiece && !reducedMotion) root.postDelayed(() -> OnePieceText.playIn(root), 450);
         resumed = true;
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
@@ -3987,7 +3989,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (!folded.isEmpty()) {
             View more = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-            ((ImageView) more.findViewById(R.id.icon)).setImageResource(R.drawable.ic_input);
+            OnePieceSkin.rowIcon(more.findViewById(R.id.icon), R.drawable.ic_input);
             ((TextView) more.findViewById(R.id.title)).setText(R.string.more_inputs);
             more.findViewById(R.id.status).setVisibility(View.GONE);
             more.findViewById(R.id.dot).setVisibility(View.GONE);
@@ -4083,7 +4085,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Drop in: fade and unfold from the top edge, hanging under the anchor pill. */
     private void dropIn(PopupWindow popup, View panel, View anchor, int gravity) {
-        if (onePiece) OnePieceSkin.parchment(panel);
+        if (onePiece) {
+            OnePieceSkin.parchment(panel);
+            // The skin's drawn row icons are larger than the plain ones: widen the menu to keep the labels whole.
+            panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+            int wide = Math.min(panel.getMeasuredWidth(), getResources().getDisplayMetrics().widthPixels / 2);
+            if (popup.getWidth() > 0 && wide > popup.getWidth()) popup.setWidth(wide);
+        }
         panel.setAlpha(0f);
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);
@@ -4105,7 +4113,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private View addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
+        OnePieceSkin.rowIcon(row.findViewById(R.id.icon), iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);
         View dot = row.findViewById(R.id.dot);
@@ -4167,26 +4175,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
         // settings_pill_menu: a click opens this menu, so the TV's own Settings comes first.
-        if (settingsPillMenu && !launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.tv_settings,
+        if (settingsPillMenu && !launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.tv_settings, R.drawable.ic_settings,
                 () -> open(systemIntent(Settings.ACTION_SETTINGS)));
-        if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, () -> startActivityForResult(
+        if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, R.drawable.ic_home_settings, () -> startActivityForResult(
                 new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         // Firmware that ships its own settings app next to the AOSP one (Xiaomi China is one): the
         // vendor app holds pages the AOSP settings has no row for, such as Account & Security with
         // the ADB switch. Offered here only while one of them is installed.
         if (SystemSettings.vendorIntent(this) != null) {
-            addSettingsMenuRow(rows, popup, R.string.native_settings, () -> {
+            addSettingsMenuRow(rows, popup, R.string.native_settings, R.drawable.ic_settings, () -> {
                 Intent vendor = SystemSettings.vendorIntent(this);
                 if (vendor != null) open(vendor);
             });
         }
-        if (moduleCards) addSettingsMenuRow(rows, popup, R.string.module_cards, this::showModuleCards);
+        if (moduleCards) addSettingsMenuRow(rows, popup, R.string.module_cards, R.drawable.ic_apps, this::showModuleCards);
         // apps_screen: pinned apps change from the hold menu on Home (Replace, Move), not from here.
-        if (dockRow && !appsScreen) addSettingsMenuRow(rows, popup, R.string.dock_edit, this::startDockEdit);
+        if (dockRow && !appsScreen) addSettingsMenuRow(rows, popup, R.string.dock_edit, R.drawable.ic_apps, this::startDockEdit);
         // apps_screen: reordering lives on the Apps screen (hold OK on an app there).
-        if (!appsScreen) addSettingsMenuRow(rows, popup, R.string.reorder, this::toggleReorder);
-        // A launcher may not restart the TV itself; the Home key helper can open the system power menu instead.
-        if (HomeKeyService.canOpenPowerMenu()) addSettingsMenuRow(rows, popup, R.string.power_menu, HomeKeyService::openPowerMenu);
+        if (!appsScreen) addSettingsMenuRow(rows, popup, R.string.reorder, R.drawable.ic_swap_vert, this::toggleReorder);
+        // A launcher may not power off or restart the TV itself; the Home key helper does both (showPowerMenu).
+        if (HomeKeyService.canOpenPowerMenu()) addSettingsMenuRow(rows, popup, R.string.power_menu, R.drawable.ic_power,
+                () -> root.post(this::showPowerMenu));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
         // Hebrew puts Settings at the left of the header: grow the menu inward from it.
@@ -4298,7 +4307,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (key == null || pkg == null || pkg.equals(getPackageName())) return;
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
-        PopupWindow popup = glassPopup(panel, (int) (200 * density));
+        PopupWindow popup = glassPopup(panel, (int) (TileMenu.WIDTH_DP * density));
         if (dockRow && position < adapter.movableCount()) {
             boolean inDock = position < COLUMNS;
             addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock, () -> {
@@ -4330,25 +4339,164 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
         Intent info = SystemSettings.appInfo(this, pkg);
         if (info != null) addSettingsMenuRow(rows, popup, R.string.library_app_info, () -> open(info));
+        if (onePiece) OnePieceSkin.parchment(panel);
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
-        // Dock tiles sit near the bottom of the screen: open the menu above the tile when it would not fit below.
-        int[] at = new int[2];
-        card.getLocationInWindow(at);
-        int gap = (int) (10 * density), height = panel.getMeasuredHeight();
-        if (at[1] + card.getHeight() + gap + height <= root.getHeight()) {
-            dropIn(popup, panel, card, Gravity.START);
-        } else {
-            panel.setAlpha(0f);
-            panel.setPivotY(height);
-            panel.setScaleY(0.92f);
-            panel.setTranslationY(8 * density);
-            if (onePiece) OnePieceSkin.parchment(panel);
-            popup.showAtLocation(root, Gravity.NO_GRAVITY, at[0], Math.max(0, at[1] - gap - height));
-            panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
-                    .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
-        }
+        int width = Math.max((int) (TileMenu.WIDTH_DP * density), panel.getMeasuredWidth());
+        popup.setWidth(width);
+        panel.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int height = panel.getMeasuredHeight();
+        // The same place and air round the app as the Apps screen's menu (TileMenu): clear of the focused tile's
+        // zoom, below it, or above it near the bottom of the screen.
+        int[] place = TileMenu.place(card, root, width, height, adapter.focusScale(), density);
+        boolean above = place[2] == 1;
+        panel.setAlpha(0f);
+        panel.setPivotY(above ? height : 0f);
+        panel.setScaleY(0.92f);
+        panel.setTranslationY((above ? 8 : -8) * density);
+        popup.showAtLocation(root, Gravity.NO_GRAVITY, place[0], place[1]);
+        panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(reducedMotion ? Motion.REDUCED_MS : 220)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
         rows.getChildAt(0).requestFocus();
+    }
+
+    /** A settings menu row with an icon, which only the One Piece skin shows (its own drawn one); text only otherwise. */
+    private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, int icon, Runnable action) {
+        addSettingsMenuRow(rows, popup, title, action);
+        if (!onePiece) return;
+        ImageView image = rows.getChildAt(rows.getChildCount() - 1).findViewById(R.id.icon);
+        image.setVisibility(View.VISIBLE);
+        OnePieceSkin.rowIcon(image, icon);
+    }
+
+    /**
+     * The launcher's own power menu, in place of Android's (the phone layout, which a D-pad cannot use): two large
+     * buttons, Power off (standby, as the remote's power key) and Restart, carried out by the Home key helper.
+     * Back closes it. In the One Piece skin it is a parchment sheet with a lantern and an anchor.
+     */
+    private void showPowerMenu() {
+        if (!HomeKeyService.canOpenPowerMenu() || isFinishing()) return;
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER_HORIZONTAL);
+        int pad = (int) (22 * density);
+        panel.setPadding(pad, (int) (18 * density), pad, pad);
+        panel.setBackgroundResource(R.drawable.glass_panel);
+        PopupWindow popup = glassPopup(panel, ViewGroup.LayoutParams.WRAP_CONTENT);
+
+        TextView title = new TextView(this);
+        String heading = getString(R.string.power_menu);
+        title.setText(heading.endsWith("\u2026") ? heading.substring(0, heading.length() - 1) : heading);
+        title.setGravity(Gravity.CENTER);
+        if (onePiece) {
+            title.setTypeface(getResources().getFont(R.font.pirata_one));
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
+            title.setTextColor(OnePieceSkin.PAPER_INK);
+        } else {
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
+            title.setTextColor(Color.WHITE);
+        }
+        panel.addView(title);
+
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams under = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        under.topMargin = (int) (14 * density);
+        panel.addView(buttons, under);
+        View off = addPowerButton(buttons, popup, R.string.power_off, R.drawable.ic_power, OnePieceIcon.LANTERN,
+                HomeKeyService::powerOff);
+        addPowerButton(buttons, popup, R.string.power_restart, R.drawable.ic_restart, OnePieceIcon.ANCHOR,
+                HomeKeyService::restart);
+
+        if (onePiece) {
+            panel.setBackground(OnePieceSkin.sheet(density, 22 * density));
+            OnePieceSkin.clickPanel();
+        }
+        panel.setAlpha(0f);
+        panel.setScaleX(0.9f);
+        panel.setScaleY(0.9f);
+        popup.showAtLocation(root, Gravity.CENTER, 0, 0);
+        dimBehind(popup, 0.6f);
+        panel.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(reducedMotion ? Motion.REDUCED_MS : 240)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.4f)).start();
+        panel.post(off::requestFocus);
+    }
+
+    /** Darkens everything behind a shown popup, as a dialog does, so a modal stands out. */
+    private void dimBehind(PopupWindow popup, float amount) {
+        View container = popup.getContentView().getRootView();
+        if (!(container.getLayoutParams() instanceof android.view.WindowManager.LayoutParams)) return;
+        android.view.WindowManager.LayoutParams p = (android.view.WindowManager.LayoutParams) container.getLayoutParams();
+        p.flags |= android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        p.dimAmount = amount;
+        getWindowManager().updateViewLayout(container, p);
+    }
+
+    private View addPowerButton(LinearLayout buttons, PopupWindow popup, int label, int plainIcon, int skinIcon,
+                                Runnable action) {
+        LinearLayout button = new LinearLayout(this);
+        button.setOrientation(LinearLayout.VERTICAL);
+        button.setGravity(Gravity.CENTER);
+        button.setFocusable(true);
+        button.setClickable(true);
+        int pad = (int) (12 * density);
+        button.setPadding(pad, pad, pad, pad);
+        ImageView icon = new ImageView(this);
+        icon.setDuplicateParentStateEnabled(true);
+        int iconSize = (int) ((onePiece ? 72 : 48) * density);
+        button.addView(icon, new LinearLayout.LayoutParams(iconSize, iconSize));
+        TextView text = new TextView(this);
+        text.setDuplicateParentStateEnabled(true);
+        text.setText(label);
+        text.setGravity(Gravity.CENTER);
+        text.setSingleLine(true);
+        LinearLayout.LayoutParams gap = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        gap.topMargin = (int) (8 * density);
+        button.addView(text, gap);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (156 * density), (int) (150 * density));
+        int m = (int) (8 * density);
+        lp.setMargins(m, 0, m, 0);
+        buttons.addView(button, lp);
+
+        android.content.res.ColorStateList ink;
+        if (onePiece) {
+            OnePieceIcon drawn = new OnePieceIcon(density, skinIcon);
+            drawn.setReducedMotion(reducedMotion);
+            icon.setImageDrawable(drawn);
+            text.setTypeface(getResources().getFont(R.font.pirata_one));
+            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 21);
+            ink = new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused}, {}},
+                    new int[]{OnePieceSkin.MAP_INK, OnePieceSkin.PAPER_INK});
+            float radius = 16 * density;
+            // On the map: a paper plank, and the map's own focus mark (a red ink loop), not the tiles' rope.
+            android.graphics.drawable.GradientDrawable face = new android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{0x55FFF6DC, 0x22B07A3A});
+            face.setCornerRadius(radius);
+            button.setBackground(face);
+            OnePieceSkin.markOnFocus(button, density);
+            View.OnFocusChangeListener marked = button.getOnFocusChangeListener();
+            button.setOnFocusChangeListener((v, has) -> {
+                marked.onFocusChange(v, has);
+                if (has) drawn.nudge();
+                v.animate().scaleX(has ? 1.05f : 1f).scaleY(has ? 1.05f : 1f)
+                        .setDuration(reducedMotion ? 0 : 160).start();
+            });
+        } else {
+            icon.setImageResource(plainIcon);
+            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            ink = new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused}, {}},
+                    new int[]{0xFF111111, Color.WHITE});
+            icon.setImageTintList(ink);
+            button.setBackgroundResource(R.drawable.input_row_bg);
+        }
+        text.setTextColor(ink);
+        button.setOnClickListener(v -> {
+            popup.dismiss();
+            action.run();
+        });
+        return button;
     }
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {
