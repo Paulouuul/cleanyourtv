@@ -106,10 +106,12 @@
     <string name="card_state_new_label">New name</string>
     <string name="dock_edit">Edit dock</string>
     <!-- Settings menu: opens the system power menu, with Power off and Restart. -->
-    <string name="power_menu">Power off or restart…</string>
+    <string name="power_menu">Power off…</string>
     <!-- The launcher's power menu: its two buttons. Power off puts the TV in standby. -->
     <string name="power_off">Power off</string>
-    <string name="power_restart">Restart</string>
+    <string name="power_confirm">Power off the TV?</string>
+    <string name="power_yes">Yes</string>
+    <string name="power_no">No</string>
     <!-- Launcher settings, shown only when the theme has a skin: %s is On or Off. -->
     <string name="skin_state">Theme skin: %1$s</string>
     <string name="dock_edit_hint">Choose the dock place to change and press OK. Back to finish.</string>

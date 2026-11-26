@@ -78,9 +78,11 @@
     <string name="card_state_new_key">Clave nueva</string>
     <string name="card_state_new_label">Nome nuevu</string>
     <string name="dock_edit">Editar el dock</string>
-    <string name="power_menu">Apagar o reaniciar…</string>
+    <string name="power_menu">Apagar…</string>
     <string name="power_off">Apagar</string>
-    <string name="power_restart">Reaniciar</string>
+    <string name="power_confirm">¿Apagar la TV?</string>
+    <string name="power_yes">Sí</string>
+    <string name="power_no">Non</string>
     <string name="skin_state">Aspeutu del tema: %1$s</string>
     <string name="dock_edit_hint">Escueyi\'l sitiu del dock que quies camudar y calca OK. Atrás pa finar.</string>
     <string name="dock_edit_pick_app">Agora escueyi l\'aplicación que quies poner ende y calca OK. Atrás pa escoyer otru sitiu.</string>

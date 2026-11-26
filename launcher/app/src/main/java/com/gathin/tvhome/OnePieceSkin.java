@@ -24,6 +24,14 @@ final class OnePieceSkin {
         return cfg != null && NAME.equals(cfg.skin);
     }
 
+    /**
+     * Home's and the Apps screen's backdrop, set in one place: the skin's deep sea, or the launcher settings'
+     * blue-black (R.color.screen_bg), so the three screens match.
+     */
+    static void backdrop(View v, Config cfg) {
+        v.setBackgroundResource(on(cfg) ? R.drawable.onepiece_ocean : R.color.screen_bg);
+    }
+
     /** Header text and top-bar pills; called once Home's views are set up. */
     static void applyHome(Activity home) {
         float d = home.getResources().getDisplayMetrics().density;
@@ -312,8 +320,8 @@ final class OnePieceSkin {
             b.setBackground(settingsChoice(d));
             underlineOnFocus(b, d);
             liftOnFocus(b);
-            int pad = Math.round(16 * d);
-            b.setPadding(pad, b.getPaddingTop(), pad, b.getPaddingBottom());
+            // The focus underline ends in a cross 17dp in from the right edge (InkUnderline): room for it past the label.
+            b.setPadding(Math.round(16 * d), b.getPaddingTop(), Math.round(36 * d), b.getPaddingBottom());
             if (b.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                 ((ViewGroup.MarginLayoutParams) b.getLayoutParams()).setMarginStart(Math.round(10 * d));
             }

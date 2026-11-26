@@ -574,7 +574,7 @@ final class OnePieceFrames {
         private final Path path = new Path();
         private final RectF r = new RectF();
         private final ValueAnimator move = ValueAnimator.ofFloat(0f, 1f);
-        private boolean chosen;
+        private boolean chosen, focused;
         private float k = 1f;
 
         ChosenMark(float density) {
@@ -594,8 +594,18 @@ final class OnePieceFrames {
 
         @Override
         protected boolean onStateChange(@NonNull int[] state) {
-            boolean now = false;
-            for (int s : state) now |= s == android.R.attr.state_selected;
+            boolean now = false, f = false;
+            for (int s : state) {
+                now |= s == android.R.attr.state_selected;
+                f |= s == android.R.attr.state_focused;
+            }
+            if (f != focused) {
+                focused = f;
+                if (now == chosen) {
+                    invalidateSelf();
+                    return true;
+                }
+            }
             if (now == chosen) return false;
             chosen = now;
             if (chosen) {
@@ -678,8 +688,9 @@ final class OnePieceFrames {
             }
             path.close();
             p.setStyle(Paint.Style.FILL);
-            p.setColor(INK);
-            p.setAlpha(alpha * 0xC8 / 255);
+            // Under focus the star is struck in red, in place of the focus mark's X.
+            p.setColor(focused ? 0xFFC0392B : INK);
+            p.setAlpha(alpha * (focused ? 0xFF : 0xC8) / 255);
             c.drawPath(path, p);
             c.restore();
             // A sparkle over the coin as the gleam passes.
@@ -1027,9 +1038,9 @@ final class OnePieceFrames {
             return true;
         }
 
-        /** Where the stroke ends: clear of the doubloon (ChosenMark) when the choice is the chosen one. */
+        /** Where the stroke ends: the same on every choice (it runs under the chosen one's doubloon, clear of it). */
         private float right(Rect b) {
-            return b.right - (chosen ? 72f : 30f) * d;
+            return b.right - 30f * d;
         }
 
         @Override
@@ -1059,7 +1070,8 @@ final class OnePieceFrames {
             p.setAlpha(0xE0);
             c.drawPath(stroke, p);
             c.restoreToCount(save);
-            if (k > 0.7f) {
+            // The X marks the spot, except on the chosen choice: its doubloon's star turns red instead (ChosenMark).
+            if (k > 0.7f && !chosen) {
                 float t = (k - 0.7f) / 0.3f;
                 float pop = 1f + 0.4f * (float) Math.sin(t * Math.PI);
                 float x = right + 13f * d, y = b.top + b.height() * 0.5f, s = 5f * d * pop * Math.min(1f, t * 1.6f);
@@ -1089,10 +1101,14 @@ final class OnePieceFrames {
         private final RectF r = new RectF();
         private final ValueAnimator move = ValueAnimator.ofFloat(0f, 1f);
         private float k = 1f;
+        /** The card's title, underlined by the ink stroke. */
+        private final android.widget.TextView title;
+        private final Path brush = new Path();
 
-        CardMark(float density, float radiusPx) {
+        CardMark(float density, float radiusPx, android.widget.TextView title) {
             d = density;
             radius = radiusPx;
+            this.title = title;
             p.setStrokeCap(Paint.Cap.ROUND);
             move.setDuration(900);
             move.setInterpolator(new LinearInterpolator());
@@ -1142,27 +1158,37 @@ final class OnePieceFrames {
                 p.setShader(null);
                 c.restoreToCount(save);
             }
-            // The X stamp, in from large with a bounce, then still.
-            float t = Math.max(0f, Math.min(1f, (k - 0.15f) / 0.4f));
-            if (t > 0f) {
-                float pop = t < 1f ? 1f + 0.9f * (1f - t) - 0.25f * (float) Math.sin(t * Math.PI) : 1f;
-                float s = 6.5f * d * pop, x = b.right - 16f * d, y = b.top + 16f * d;
-                p.setStyle(Paint.Style.STROKE);
-                p.setColor(0xFFFFF4D8);          // a pale edge so it reads on any picture
-                p.setAlpha((int) (230 * Math.min(1f, t * 2f)));
-                p.setStrokeWidth(5.4f * d);
-                c.drawLine(x - s, y - s, x + s, y + s, p);
-                c.drawLine(x + s, y - s, x - s, y + s, p);
-                p.setColor(INK);
-                p.setAlpha((int) (255 * Math.min(1f, t * 2f)));
-                p.setStrokeWidth(4f * d);
-                c.drawLine(x - s, y - s, x + s, y + s, p);
-                c.drawLine(x + s, y - s, x - s, y + s, p);
-                p.setColor(RED);
-                p.setStrokeWidth(2.6f * d);
-                c.drawLine(x - s, y - s, x + s, y + s, p);
-                c.drawLine(x + s, y - s, x - s, y + s, p);
+            // An ink brush stroke under the title, swept from left to right, as a name underlined on a map.
+            android.text.Layout layout = title.getLayout();
+            if (layout == null || layout.getLineCount() == 0) return;
+            float x = 0f, y = 0f;
+            // The title's place inside the card (this drawable's view): its offsets up to the card.
+            Object card = getCallback();
+            while (card instanceof Drawable) card = ((Drawable) card).getCallback();   // through the layer it is in
+            for (android.view.View v = title; v != null && v != card; ) {
+                x += v.getLeft();
+                y += v.getTop();
+                if (!(v.getParent() instanceof android.view.View)) break;
+                v = (android.view.View) v.getParent();
             }
+            float left = b.left + x + title.getTotalPaddingLeft();
+            float right = left + Math.min(layout.getLineWidth(0), title.getWidth() - title.getTotalPaddingLeft());
+            float line = b.top + y + title.getTotalPaddingTop() + layout.getLineBaseline(0) + 3f * d;
+            float drawn = Math.max(0f, Math.min(1f, (k - 0.1f) / 0.55f));
+            if (drawn <= 0f || right <= left) return;
+            float half = 1.6f * d, w = right - left;
+            brush.reset();
+            brush.moveTo(left, line + 0.3f * d);
+            brush.cubicTo(left + w * 0.3f, line - half * 1.2f, left + w * 0.7f, line - half, right, line - 0.5f * d);
+            brush.cubicTo(left + w * 0.72f, line + half * 0.9f, left + w * 0.3f, line + half * 1.1f, left, line + 0.3f * d);
+            brush.close();
+            int keep = c.save();
+            c.clipRect(left - 2f * d, b.top, left + w * drawn + 2f * d, b.bottom);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(INK);
+            p.setAlpha(0xE0);
+            c.drawPath(brush, p);
+            c.restoreToCount(keep);
         }
 
         @Override public void setAlpha(int alpha) { }

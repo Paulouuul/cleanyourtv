@@ -45,9 +45,10 @@ Click **Settings** for the TV's own settings. Hold OK on it for its menu:
 - **Edit dock**, with `dock_row`.
 - **Reorder apps**: OK picks an app up, the arrows move it, Back places it, and Back again finishes.
   With `tile_menu` (on by default since 3.3), holding OK on a tile offers **Move**, which picks that app up straight away.
-- **Power off or restart…** while `HomeKeyService` runs: the launcher's own menu with **Power off**
-  (standby) and **Restart**, which the helper carries out (a launcher may not restart the TV itself; Android's
-  power menu is the phone layout, which a D-pad cannot use).
+- **Power off…** while `HomeKeyService` runs: the launcher's own "Power off the TV?" with **Yes**
+  (standby) and **No**, focused first. The helper carries out Yes (a launcher may not power off the TV itself;
+  Android's power menu is the phone layout, which a D-pad cannot use). There is no Restart: on the TCL 32S5K
+  a restart comes back in standby, the same as Power off.
 
 The launcher's own page has these rows, top to bottom:
 

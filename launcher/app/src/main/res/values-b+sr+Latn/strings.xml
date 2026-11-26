@@ -48,9 +48,11 @@
     <string name="off">Isklj.</string>
     <string name="enable">Uključi</string>
     <string name="dock_edit">Uredi dok</string>
-    <string name="power_menu">Isključi ili ponovo pokreni…</string>
+    <string name="power_menu">Isključi…</string>
     <string name="power_off">Isključi</string>
-    <string name="power_restart">Ponovo pokreni</string>
+    <string name="power_confirm">Isključiti TV?</string>
+    <string name="power_yes">Da</string>
+    <string name="power_no">Ne</string>
     <string name="skin_state">Izgled teme: %1$s</string>
     <string name="dock_edit_hint">Izaberite mesto u doku i pritisnite OK. Nazad za kraj.</string>
     <string name="dock_edit_pick_app">Sada izaberite aplikaciju za to mesto i pritisnite OK. Nazad da izaberete drugo mesto.</string>

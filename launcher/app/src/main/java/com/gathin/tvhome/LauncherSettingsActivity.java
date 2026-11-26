@@ -212,6 +212,7 @@ public final class LauncherSettingsActivity extends Activity {
             });
         }
         onePiece = OnePieceSkin.on(config);
+        if (!onePiece) PlainText.keepWhite(findViewById(android.R.id.content));   // one text colour, white
         if (onePiece) {
             // The skin paints its own sea behind Home: a wallpaper choice would change nothing.
             wallpaperChoice.setVisibility(View.GONE);

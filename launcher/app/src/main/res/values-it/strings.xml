@@ -95,9 +95,11 @@
     <string name="card_state_new_key">Nuova chiave</string>
     <string name="card_state_new_label">Nuovo nome</string>
     <string name="dock_edit">Modifica dock</string>
-    <string name="power_menu">Spegni o riavvia…</string>
+    <string name="power_menu">Spegni…</string>
     <string name="power_off">Spegni</string>
-    <string name="power_restart">Riavvia</string>
+    <string name="power_confirm">Spegnere la TV?</string>
+    <string name="power_yes">Sì</string>
+    <string name="power_no">No</string>
     <string name="skin_state">Skin del tema: %1$s</string>
     <string name="dock_edit_hint">Scegli il posto del dock da cambiare e premi OK. Indietro per finire.</string>
     <string name="dock_edit_pick_app">Ora scegli l\'app da mettere lì e premi OK. Indietro per scegliere un altro posto.</string>

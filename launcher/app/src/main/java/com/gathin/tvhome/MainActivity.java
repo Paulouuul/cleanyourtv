@@ -254,6 +254,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean inputsConnectedOnly;
     /** config.xml inputs_cec_state_only: only CEC device rows show a connection state, bare HDMI ports none. */
     private boolean inputsCecStateOnly;
+    /** The open Inputs list's rows, kept so a port plugged in or out updates its row live; null while closed. */
+    private LinearLayout openInputRows;
     private boolean shamsi;
     /** greeting_name: said after the greeting, which is shown in capitals. */
     private String greetingName = "";
@@ -440,6 +442,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void onInputRemoved(String inputId) {
             updateInputsButton();
         }
+
+        /** A device plugged into or out of a port: the open Inputs list shows it at once. */
+        @Override
+        public void onInputStateChanged(String inputId, int state) {
+            LinearLayout rows = openInputRows;
+            if (rows == null || openPopup == null || !openPopup.isShowing()) return;
+            for (int i = 0; i < rows.getChildCount(); i++) {
+                View row = rows.getChildAt(i);
+                if (inputId.equals(row.getTag(R.id.status))) showInputState(row, state);
+            }
+        }
     };
     /** Listens for any VPN coming up or going down, even one this app's traffic is excluded from. */
     private final ConnectivityManager.NetworkCallback vpnCallback = new ConnectivityManager.NetworkCallback() {
@@ -551,22 +564,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         coocaaSources = cfg.coocaaSources;
 
         root = findViewById(R.id.root);
-        root.setBackgroundColor(cfg.backgroundColor);
-        if (onePiece) root.setBackgroundResource(R.drawable.onepiece_ocean);   // deep sea with cartoon waves
+        OnePieceSkin.backdrop(root, cfg);
         // root fills the window with an opaque colour (Config keeps background_color opaque), so the window's own
         // black under it is a second full-screen fill on every frame for nothing. The starting window still uses
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        if (!onePiece) PlainText.keepWhite(root);   // one text colour, white, with the skin off
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
-        if (onePiece) {
-            // The focused tile wears its own rope (AppAdapter); the sliding highlight only marks a carried app.
-            glass.setRope(true);
-            glass.setVisibility(View.GONE);
-        }
+        // The focused tile wears its own mark (AppAdapter); the sliding highlight only marks a carried app.
+        glass.setVisibility(View.GONE);
+        if (onePiece) glass.setRope(true);
         if (festive) glass.setAccent(festival.accentColor());
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
@@ -1682,10 +1693,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         reordering = true;
         orderAtStart = adapter.movableKeys();
         glass.setAccent(REORDER_ACCENT);
-        if (onePiece) {
-            glass.setVisibility(View.VISIBLE);
-            refocusTileSkin();   // the focused tile drops its gold rope for the sliding red one
-        }
+        glass.setVisibility(View.VISIBLE);
+        refocusTileSkin();   // the focused tile drops its own mark for the sliding one
         btnReorder.setActivated(true);
         return true;
     }
@@ -1856,10 +1865,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dimOthers();   // drop() ran while reordering was still on; restore full brightness now the mode is off
         adapter.setReordering(false);
         glass.setAccent(festive ? festival.accentColor() : 0);
-        if (onePiece) {
-            glass.setVisibility(View.GONE);
-            refocusTileSkin();   // and takes its gold rope back
-        }
+        glass.setVisibility(View.GONE);
+        refocusTileSkin();   // and takes its own mark back
         btnReorder.setActivated(false);
         List<String> keys = adapter.movableKeys();
         List<String> before = orderAtStart;
@@ -3972,6 +3979,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         final String deviceId = device.getId();
                         int state = hdmiStateBogus && !inputsCecStateOnly ? -1 : tim.getInputState(deviceId);
                         View row = addInputRow(rows, popup, R.drawable.ic_input, deviceLabel, state, () -> openInput(deviceId));
+                        if (state != -1) row.setTag(R.id.status, deviceId);   // follows plugging in and out
                         if (connectedOnly && InputFold.folds(true, state)) fold(row, folded);
                     }
                     continue;
@@ -3984,6 +3992,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 int state = !hdmi || hdmiStateBogus ? -1 : tim.getInputState(id);
                 View row = addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
                         () -> openInput(id));
+                if (state != -1) row.setTag(R.id.status, id);   // follows plugging in and out
                 if (connectedOnly && InputFold.folds(hdmi, state)) fold(row, folded);
             }
         }
@@ -4058,6 +4067,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setWidth(Math.max(width, Math.min(panel.getMeasuredWidth(), (int) (360 * density))));
 
         int alignment = getResources().getBoolean(R.bool.rtl_menu_bar) != underGear ? Gravity.END : Gravity.START;
+        openInputRows = rows;
         dropIn(popup, panel, anchor, alignment);
         for (int i = 0; i < rows.getChildCount(); i++) {
             View child = rows.getChildAt(i);
@@ -4085,6 +4095,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Drop in: fade and unfold from the top edge, hanging under the anchor pill. */
     private void dropIn(PopupWindow popup, View panel, View anchor, int gravity) {
+        if (!onePiece) PlainText.keepWhite(panel);
         if (onePiece) {
             OnePieceSkin.parchment(panel);
             // The skin's drawn row icons are larger than the plain ones: widen the menu to keep the labels whole.
@@ -4115,26 +4126,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
         OnePieceSkin.rowIcon(row.findViewById(R.id.icon), iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
-        TextView status = row.findViewById(R.id.status);
-        View dot = row.findViewById(R.id.dot);
-        // This TV reports "standby" for every port whether or not something is plugged in, so only
-        // definite states are shown.
-        if (state == TvInputManager.INPUT_STATE_CONNECTED) {
-            status.setText(R.string.connected);
-            dot.setVisibility(View.VISIBLE);
-        } else if (state == TvInputManager.INPUT_STATE_DISCONNECTED) {
-            status.setText(R.string.not_connected);
-            dot.setVisibility(View.GONE);
-        } else {
-            status.setVisibility(View.GONE);
-            dot.setVisibility(View.GONE);
-        }
+        showInputState(row, state);
         row.setOnClickListener(v -> {
             popup.dismiss();
             action.run();
         });
         rows.addView(row);
         return row;
+    }
+
+    /**
+     * A row's Connected / Not connected. Some TVs report "standby" for every port whether or not something is
+     * plugged in, so only definite states are shown.
+     */
+    private static void showInputState(View row, int state) {
+        TextView status = row.findViewById(R.id.status);
+        boolean on = state == TvInputManager.INPUT_STATE_CONNECTED;
+        boolean off = state == TvInputManager.INPUT_STATE_DISCONNECTED;
+        if (on || off) status.setText(on ? R.string.connected : R.string.not_connected);
+        status.setVisibility(on || off ? View.VISIBLE : View.GONE);
+        row.findViewById(R.id.dot).setVisibility(on ? View.VISIBLE : View.GONE);
     }
 
     // ---- launcher settings and module cards -------------------------------------------------------
@@ -4193,9 +4204,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (dockRow && !appsScreen) addSettingsMenuRow(rows, popup, R.string.dock_edit, R.drawable.ic_apps, this::startDockEdit);
         // apps_screen: reordering lives on the Apps screen (hold OK on an app there).
         if (!appsScreen) addSettingsMenuRow(rows, popup, R.string.reorder, R.drawable.ic_swap_vert, this::toggleReorder);
-        // A launcher may not power off or restart the TV itself; the Home key helper does both (showPowerMenu).
+        // A launcher may not power off the TV itself; the Home key helper does it (PowerMenuActivity).
         if (HomeKeyService.canOpenPowerMenu()) addSettingsMenuRow(rows, popup, R.string.power_menu, R.drawable.ic_power,
-                () -> root.post(this::showPowerMenu));
+                () -> startActivity(new Intent(this, PowerMenuActivity.class)));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
         // Hebrew puts Settings at the left of the header: grow the menu inward from it.
@@ -4367,136 +4378,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ImageView image = rows.getChildAt(rows.getChildCount() - 1).findViewById(R.id.icon);
         image.setVisibility(View.VISIBLE);
         OnePieceSkin.rowIcon(image, icon);
-    }
-
-    /**
-     * The launcher's own power menu, in place of Android's (the phone layout, which a D-pad cannot use): two large
-     * buttons, Power off (standby, as the remote's power key) and Restart, carried out by the Home key helper.
-     * Back closes it. In the One Piece skin it is a parchment sheet with a lantern and an anchor.
-     */
-    private void showPowerMenu() {
-        if (!HomeKeyService.canOpenPowerMenu() || isFinishing()) return;
-        LinearLayout panel = new LinearLayout(this);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setGravity(Gravity.CENTER_HORIZONTAL);
-        int pad = (int) (22 * density);
-        panel.setPadding(pad, (int) (18 * density), pad, pad);
-        panel.setBackgroundResource(R.drawable.glass_panel);
-        PopupWindow popup = glassPopup(panel, ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        TextView title = new TextView(this);
-        String heading = getString(R.string.power_menu);
-        title.setText(heading.endsWith("\u2026") ? heading.substring(0, heading.length() - 1) : heading);
-        title.setGravity(Gravity.CENTER);
-        if (onePiece) {
-            title.setTypeface(getResources().getFont(R.font.pirata_one));
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
-            title.setTextColor(OnePieceSkin.PAPER_INK);
-        } else {
-            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
-            title.setTextColor(Color.WHITE);
-        }
-        panel.addView(title);
-
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams under = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        under.topMargin = (int) (14 * density);
-        panel.addView(buttons, under);
-        View off = addPowerButton(buttons, popup, R.string.power_off, R.drawable.ic_power, OnePieceIcon.LANTERN,
-                HomeKeyService::powerOff);
-        addPowerButton(buttons, popup, R.string.power_restart, R.drawable.ic_restart, OnePieceIcon.ANCHOR,
-                HomeKeyService::restart);
-
-        if (onePiece) {
-            panel.setBackground(OnePieceSkin.sheet(density, 22 * density));
-            OnePieceSkin.clickPanel();
-        }
-        panel.setAlpha(0f);
-        panel.setScaleX(0.9f);
-        panel.setScaleY(0.9f);
-        popup.showAtLocation(root, Gravity.CENTER, 0, 0);
-        dimBehind(popup, 0.6f);
-        panel.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(reducedMotion ? Motion.REDUCED_MS : 240)
-                .setInterpolator(new android.view.animation.OvershootInterpolator(1.4f)).start();
-        panel.post(off::requestFocus);
-    }
-
-    /** Darkens everything behind a shown popup, as a dialog does, so a modal stands out. */
-    private void dimBehind(PopupWindow popup, float amount) {
-        View container = popup.getContentView().getRootView();
-        if (!(container.getLayoutParams() instanceof android.view.WindowManager.LayoutParams)) return;
-        android.view.WindowManager.LayoutParams p = (android.view.WindowManager.LayoutParams) container.getLayoutParams();
-        p.flags |= android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        p.dimAmount = amount;
-        getWindowManager().updateViewLayout(container, p);
-    }
-
-    private View addPowerButton(LinearLayout buttons, PopupWindow popup, int label, int plainIcon, int skinIcon,
-                                Runnable action) {
-        LinearLayout button = new LinearLayout(this);
-        button.setOrientation(LinearLayout.VERTICAL);
-        button.setGravity(Gravity.CENTER);
-        button.setFocusable(true);
-        button.setClickable(true);
-        int pad = (int) (12 * density);
-        button.setPadding(pad, pad, pad, pad);
-        ImageView icon = new ImageView(this);
-        icon.setDuplicateParentStateEnabled(true);
-        int iconSize = (int) ((onePiece ? 72 : 48) * density);
-        button.addView(icon, new LinearLayout.LayoutParams(iconSize, iconSize));
-        TextView text = new TextView(this);
-        text.setDuplicateParentStateEnabled(true);
-        text.setText(label);
-        text.setGravity(Gravity.CENTER);
-        text.setSingleLine(true);
-        LinearLayout.LayoutParams gap = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        gap.topMargin = (int) (8 * density);
-        button.addView(text, gap);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (156 * density), (int) (150 * density));
-        int m = (int) (8 * density);
-        lp.setMargins(m, 0, m, 0);
-        buttons.addView(button, lp);
-
-        android.content.res.ColorStateList ink;
-        if (onePiece) {
-            OnePieceIcon drawn = new OnePieceIcon(density, skinIcon);
-            drawn.setReducedMotion(reducedMotion);
-            icon.setImageDrawable(drawn);
-            text.setTypeface(getResources().getFont(R.font.pirata_one));
-            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 21);
-            ink = new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused}, {}},
-                    new int[]{OnePieceSkin.MAP_INK, OnePieceSkin.PAPER_INK});
-            float radius = 16 * density;
-            // On the map: a paper plank, and the map's own focus mark (a red ink loop), not the tiles' rope.
-            android.graphics.drawable.GradientDrawable face = new android.graphics.drawable.GradientDrawable(
-                    android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{0x55FFF6DC, 0x22B07A3A});
-            face.setCornerRadius(radius);
-            button.setBackground(face);
-            OnePieceSkin.markOnFocus(button, density);
-            View.OnFocusChangeListener marked = button.getOnFocusChangeListener();
-            button.setOnFocusChangeListener((v, has) -> {
-                marked.onFocusChange(v, has);
-                if (has) drawn.nudge();
-                v.animate().scaleX(has ? 1.05f : 1f).scaleY(has ? 1.05f : 1f)
-                        .setDuration(reducedMotion ? 0 : 160).start();
-            });
-        } else {
-            icon.setImageResource(plainIcon);
-            text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            ink = new android.content.res.ColorStateList(new int[][]{{android.R.attr.state_focused}, {}},
-                    new int[]{0xFF111111, Color.WHITE});
-            icon.setImageTintList(ink);
-            button.setBackgroundResource(R.drawable.input_row_bg);
-        }
-        text.setTextColor(ink);
-        button.setOnClickListener(v -> {
-            popup.dismiss();
-            action.run();
-        });
-        return button;
     }
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {

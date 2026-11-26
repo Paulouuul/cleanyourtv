@@ -336,21 +336,32 @@ final class ContinueRow extends LinearLayout {
         }
 
         if (item.progress >= 0) {
+            // One Piece skin: a route inked on the map, inside the parchment and clear of its edge (the old red
+            // fuse along the bottom edge read as a red border).
+            int inset = poster ? dp(12) : 0;
             View track = new View(ctx);
-            track.setBackgroundColor(poster ? 0x405A3A1E : 0x40FFFFFF);
-            card.addView(track, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3), Gravity.BOTTOM));
             View bar = new View(ctx);
             if (poster) {
-                // A burning fuse: red to orange with a bright tip.
-                bar.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                        new int[]{0xFF8E1414, 0xFFD62828, 0xFFFF9A2E}));
+                GradientDrawable t = new GradientDrawable();
+                t.setColor(0x335A3A1E);
+                t.setCornerRadius(dp(2));
+                track.setBackground(t);
+                GradientDrawable b = new GradientDrawable();
+                b.setColor(OnePieceSkin.MAP_INK);
+                b.setCornerRadius(dp(2));
+                bar.setBackground(b);
             } else {
+                track.setBackgroundColor(0x40FFFFFF);
                 bar.setBackgroundColor(Color.WHITE);
             }
+            FrameLayout.LayoutParams tlp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3), Gravity.BOTTOM);
+            tlp.setMargins(inset, 0, inset, poster ? dp(7) : 0);
+            card.addView(track, tlp);
             FrameLayout.LayoutParams blp = new FrameLayout.LayoutParams(0, dp(3), Gravity.BOTTOM | Gravity.START);
+            blp.setMargins(inset, 0, 0, poster ? dp(7) : 0);
             card.addView(bar, blp);
             card.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-                int w = Math.round((r - l) * item.progress);
+                int w = Math.round((r - l - 2 * inset) * item.progress);
                 if (blp.width != w) {
                     blp.width = w;
                     bar.post(bar::requestLayout);
@@ -365,11 +376,11 @@ final class ContinueRow extends LinearLayout {
         ring.setColor(Color.TRANSPARENT);
         Drawable focusRing = ring, restRing = null;
         if (poster) {
-            // A card of the map, so a map's edge (no wood) at rest; under focus a gold gleam crosses it and a red X
-            // is stamped in its corner (CardMark), clear of the edge.
+            // A card of the map, so a map's edge (no wood) at rest; under focus a gold gleam crosses it and an ink
+            // stroke underlines its title (CardMark), clear of the edge.
             restRing = new OnePieceFrames.MapEdge(density, dp(12), true);
             focusRing = new android.graphics.drawable.LayerDrawable(new Drawable[]{
-                    new OnePieceFrames.MapEdge(density, dp(12), true), new OnePieceFrames.CardMark(density, dp(12))});
+                    new OnePieceFrames.MapEdge(density, dp(12), true), new OnePieceFrames.CardMark(density, dp(12), name)});
             card.setForeground(restRing);
         }
         final Drawable onFocus = focusRing, atRest = restRing;

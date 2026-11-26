@@ -25,7 +25,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.util.TypedValue;
@@ -659,11 +658,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Reorder mode on or off; takes effect at the next reload() (empty dock slots are left out while on). */
     void setReordering(boolean on) {
         reordering = on;
-        onePieceCarrying = on;
+        carrying = on;
     }
 
-    /** One Piece skin: Home is moving apps, so the sliding red rope (GlassView) marks the carried tile, not the gold one. */
-    private static boolean onePieceCarrying;
+    /** Home is moving apps, so the sliding highlight (GlassView) marks the carried tile, not the tile's own mark. */
+    private static boolean carrying;
 
     boolean hasEmptySlots() {
         return emptySlots > 0;
@@ -1001,11 +1000,20 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
             });
             card.setClipToOutline(true);
-            // One Piece skin: the carved wooden frame at rest, the twisted gold rope on the focused tile itself (with
-            // its pull-tight move), as on the Apps screen and the Continue watching cards; no sliding highlight.
-            final Drawable woodRest = onePiece ? OnePieceSkin.woodFrame(density) : null;
-            final Drawable ropeFocus = onePiece ? OnePieceSkin.rope(density, -1f) : null;
-            if (onePiece) card.setForeground(woodRest);
+            // The focused tile wears its own mark, as on the Apps screen and the Continue watching cards; no sliding
+            // highlight. One Piece skin: the carved wooden frame at rest, the twisted gold rope (with its pull-tight
+            // move) on focus. Otherwise: nothing at rest, a white ring on focus.
+            final Drawable rest = onePiece ? OnePieceSkin.woodFrame(density) : null;
+            final Drawable mark;
+            if (onePiece) {
+                mark = OnePieceSkin.rope(density, -1f);
+            } else {
+                GradientDrawable ring = new GradientDrawable();
+                ring.setColor(Color.TRANSPARENT);
+                ring.setStroke(Math.round(3 * density), Color.WHITE);
+                mark = ring;
+            }
+            card.setForeground(rest);
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -1016,11 +1024,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
 
             card.setOnFocusChangeListener((view, focused) -> {
-                if (woodRest != null) {
-                    boolean roped = focused && !onePieceCarrying;
-                    view.setForeground(roped ? ropeFocus : woodRest);
-                    if (roped && animations && !reducedMotion) OnePieceFrames.Rope.playIfRope(ropeFocus);
+                boolean marked = focused && !carrying;
+                if (mark instanceof GradientDrawable) {
+                    ((GradientDrawable) mark).setCornerRadius(cornerRadius(view.getWidth(), density));
                 }
+                view.setForeground(marked ? mark : rest);
+                if (marked && onePiece && animations && !reducedMotion) OnePieceFrames.Rope.playIfRope(mark);
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
@@ -1053,9 +1062,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     view.animate().scaleX(s).scaleY(s)
                             .translationY(focused && advancedEffects && !inDock ? -4f * density : 0f)
                             .translationZ(focused && advancedEffects ? 8f * density : 0f)
-                            .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
-                            .setInterpolator(focused && !overshoot ? new DecelerateInterpolator(1.5f)
-                                    : new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
+                            .setDuration(150)   // the same zoom as the Apps screen and the Continue watching cards
                             .withLayer().start();
                     if (advancedEffects) {
                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)

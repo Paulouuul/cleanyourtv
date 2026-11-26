@@ -69,9 +69,11 @@
     <string name="card_state_new_key">Nova chave</string>
     <string name="card_state_new_label">Novo nome</string>
     <string name="dock_edit">Editar fixados</string>
-    <string name="power_menu">Desligar ou reiniciar…</string>
+    <string name="power_menu">Desligar…</string>
     <string name="power_off">Desligar</string>
-    <string name="power_restart">Reiniciar</string>
+    <string name="power_confirm">Quer desligar?</string>
+    <string name="power_yes">Sim</string>
+    <string name="power_no">Não</string>
     <string name="skin_state">Skin do tema: %1$s</string>
     <string name="dock_edit_hint">Escolha o lugar entre os fixados que quer mudar e pressione OK. Voltar para terminar.</string>
     <string name="dock_edit_pick_app">Agora escolha o app para colocar lá e pressione OK. Voltar para escolher outro lugar.</string>

@@ -67,9 +67,11 @@
     <string name="off">Kapalı</string>
     <string name="enable">Etkinleştir</string>
     <string name="dock_edit">Dock\'u düzenle</string>
-    <string name="power_menu">Kapat veya yeniden başlat…</string>
+    <string name="power_menu">Kapat…</string>
     <string name="power_off">Kapat</string>
-    <string name="power_restart">Yeniden başlat</string>
+    <string name="power_confirm">TV kapatılsın mı?</string>
+    <string name="power_yes">Evet</string>
+    <string name="power_no">Hayır</string>
     <string name="skin_state">Tema görünümü: %1$s</string>
     <string name="dock_edit_hint">Değiştirilecek dock yerini seçip Tamam\'a basın. Bitirmek için Geri.</string>
     <string name="dock_edit_pick_app">Şimdi oraya konacak uygulamayı seçip Tamam\'a basın. Başka bir yer seçmek için Geri.</string>

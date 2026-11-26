@@ -95,9 +95,11 @@
     <string name="off">Выкл.</string>
     <string name="enable">Включить</string>
     <string name="dock_edit">Изменить док</string>
-    <string name="power_menu">Выключить или перезагрузить…</string>
+    <string name="power_menu">Выключить…</string>
     <string name="power_off">Выключить</string>
-    <string name="power_restart">Перезагрузить</string>
+    <string name="power_confirm">Выключить телевизор?</string>
+    <string name="power_yes">Да</string>
+    <string name="power_no">Нет</string>
     <string name="skin_state">Оформление темы: %1$s</string>
     <string name="dock_edit_hint">Выберите место в доке и нажмите ОК. Назад — готово.</string>
     <string name="dock_edit_pick_app">Теперь выберите приложение для этого места и нажмите ОК. Назад — выбрать другое место.</string>

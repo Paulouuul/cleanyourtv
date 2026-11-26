@@ -3,9 +3,11 @@
      Everything not listed here falls back to values-pt. -->
 <resources>
     <string name="dock_edit">Editar a dock</string>
-    <string name="power_menu">Desligar ou reiniciar…</string>
+    <string name="power_menu">Desligar…</string>
     <string name="power_off">Desligar</string>
-    <string name="power_restart">Reiniciar</string>
+    <string name="power_confirm">Quer desligar?</string>
+    <string name="power_yes">Sim</string>
+    <string name="power_no">Não</string>
     <string name="skin_state">Skin do tema: %1$s</string>
     <string name="dock_edit_hint">Escolha o lugar da dock a mudar e prima OK. Voltar para terminar.</string>
     <string name="dock_edit_pick_app">Agora escolha a app a colocar lá e prima OK. Voltar para escolher outro lugar.</string>

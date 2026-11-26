@@ -40,9 +40,11 @@
     <string name="off">Desactivat</string>
     <string name="enable">Activa</string>
     <string name="dock_edit">Edita el dock</string>
-    <string name="power_menu">Apaga o reinicia…</string>
+    <string name="power_menu">Apaga…</string>
     <string name="power_off">Apaga</string>
-    <string name="power_restart">Reinicia</string>
+    <string name="power_confirm">Vols apagar la TV?</string>
+    <string name="power_yes">Sí</string>
+    <string name="power_no">No</string>
     <string name="skin_state">Aparença del tema: %1$s</string>
     <string name="dock_edit_hint">Tria la posició del dock que vols canviar i prem D\'acord. Enrere per acabar.</string>
     <string name="dock_edit_pick_app">Ara tria l\'aplicació que hi vols posar i prem D\'acord. Enrere per triar una altra posició.</string>

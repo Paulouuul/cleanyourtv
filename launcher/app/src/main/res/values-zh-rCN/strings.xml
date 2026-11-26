@@ -82,9 +82,11 @@
     <string name="card_state_new_key">新密钥</string>
     <string name="card_state_new_label">新名称</string>
     <string name="dock_edit">编辑程序坞</string>
-    <string name="power_menu">关机或重新启动…</string>
+    <string name="power_menu">关机…</string>
     <string name="power_off">关机</string>
-    <string name="power_restart">重新启动</string>
+    <string name="power_confirm">关闭电视？</string>
+    <string name="power_yes">是</string>
+    <string name="power_no">否</string>
     <string name="skin_state">主题外观：%1$s</string>
     <string name="dock_edit_hint">选择要更改的程序坞位置，然后按确定。按返回完成。</string>
     <string name="dock_edit_pick_app">现在选择要放在那里的应用，然后按确定。按返回重新选择位置。</string>

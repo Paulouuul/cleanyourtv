@@ -81,9 +81,11 @@
     <string name="card_state_new_key">Ny nyckel</string>
     <string name="card_state_new_label">Nytt namn</string>
     <string name="dock_edit">Redigera favoritraden</string>
-    <string name="power_menu">Stäng av eller starta om…</string>
+    <string name="power_menu">Stäng av…</string>
     <string name="power_off">Stäng av</string>
-    <string name="power_restart">Starta om</string>
+    <string name="power_confirm">Stäng av tv:n?</string>
+    <string name="power_yes">Ja</string>
+    <string name="power_no">Nej</string>
     <string name="skin_state">Temats utseende: %1$s</string>
     <string name="dock_edit_hint">Välj platsen i favoritraden som du vill ändra och tryck OK. Tillbaka för att avsluta.</string>
     <string name="dock_edit_pick_app">Välj nu appen som ska ligga där och tryck OK. Tillbaka för att välja en annan plats.</string>

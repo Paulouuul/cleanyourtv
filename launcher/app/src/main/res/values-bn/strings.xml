@@ -74,9 +74,11 @@
     <string name="reorder">অ্যাপ সাজান</string>
     <string name="tile_move">সরান</string>
     <string name="dock_edit">এডিট ডক</string>
-    <string name="power_menu">বন্ধ বা রিস্টার্ট করুন…</string>
+    <string name="power_menu">বন্ধ করুন…</string>
     <string name="power_off">বন্ধ করুন</string>
-    <string name="power_restart">রিস্টার্ট করুন</string>
+    <string name="power_confirm">টিভি বন্ধ করবেন?</string>
+    <string name="power_yes">হ্যাঁ</string>
+    <string name="power_no">না</string>
     <string name="skin_state">থিমের স্কিন: %1$s</string>
     <string name="dock_edit_hint">ডকের যে জায়গাটি বদলাতে চান সেটি বেছে OK চাপুন। শেষ হলে Back চাপুন।</string>
     <string name="dock_edit_pick_app">ওই জায়গায় যে অ্যাপ রাখতে চান সেটি বেছে OK চাপুন। অন্য জায়গা বাছতে Back চাপুন।</string>

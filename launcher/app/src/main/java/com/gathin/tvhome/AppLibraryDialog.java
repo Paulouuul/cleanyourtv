@@ -196,6 +196,7 @@ final class AppLibraryDialog {
     }
 
     private void reveal() {
+        if (!AppAdapter.onePiece) PlainText.keepWhite(popup.getContentView());   // one text colour with the skin off
         popup.showAtLocation(activity.getWindow().getDecorView(), Gravity.CENTER, 0, 0);
         View container = panel.getRootView();
         if (container.getLayoutParams() instanceof WindowManager.LayoutParams) {
@@ -569,6 +570,7 @@ final class AppLibraryDialog {
         menuPanel.setPivotY(0f);
         menuPanel.setScaleY(0.92f);
         menuPanel.setTranslationY(-dp(8));
+        if (!AppAdapter.onePiece) PlainText.whiten(menuPanel);
         menu.showAtLocation(activity.getWindow().getDecorView(), Gravity.TOP | Gravity.START, x, y);
         menuPanel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(reducedMotion ? Motion.REDUCED_MS : 220)
                 .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();

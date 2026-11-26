@@ -89,7 +89,9 @@ public final class AppsActivity extends Activity {
 
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
-        page.setBackgroundColor(Color.BLACK);
+        Config skinCfg = Config.load(this);
+        onePiece = OnePieceSkin.on(skinCfg);
+        OnePieceSkin.backdrop(page, skinCfg);   // the same as Home's
         page.setClipChildren(false);   // the focused tile's zoom reaches past the grid's edge
         int side = dp(56);
         int inset = dp(14);   // room inside the grid for the focused tile's zoom at its edges
@@ -103,11 +105,7 @@ public final class AppsActivity extends Activity {
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tlp.setMarginStart(inset);
         page.addView(title, tlp);
-        Config skinCfg = Config.load(this);
-        onePiece = OnePieceSkin.on(skinCfg);
         if (onePiece) {
-            // The theme's solid colour, like Home's.
-            page.setBackgroundResource(R.drawable.onepiece_ocean);
             OnePieceSkin.loadSounds(this);
             title.setLetterSpacing(0.03f);
             OnePieceText.apply(title, OnePieceText.TITLE);
@@ -128,6 +126,7 @@ public final class AppsActivity extends Activity {
         LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
         page.addView(grid, glp);
         setContentView(page);
+        if (!onePiece) PlainText.keepWhite(page);   // one text colour, white, with the skin off
         grid.post(() -> {
             View first = grid.getLayoutManager() != null ? grid.getLayoutManager().findViewByPosition(0) : null;
             if (first != null) first.requestFocus();

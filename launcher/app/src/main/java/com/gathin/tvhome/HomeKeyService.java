@@ -21,7 +21,6 @@ import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Toast;
 
 import java.util.Collections;
@@ -377,53 +376,15 @@ public class HomeKeyService extends AccessibilityService {
         return now < armedUntil;
     }
 
-    /** The settings menu offers Power off or restart only while this helper is bound: it carries out both. */
+    /** The settings menu offers Power off only while this helper is bound: it carries it out. */
     static boolean canOpenPowerMenu() {
         return running != null;
     }
 
-    /** Power off from the launcher's own power menu: standby, as the remote's power key does. */
+    /** Power off from the launcher's own power menu: rest (screen off), as a tap on the remote's power key. */
     static void powerOff() {
         HomeKeyService service = running;
         if (service != null) service.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
-    }
-
-    /**
-     * Restart from the launcher's own power menu. A launcher may not restart the TV, so this opens Android's power
-     * menu and presses its Restart button at once: that menu (the phone layout, which opens with nothing focused
-     * and a D-pad cannot use) is never left on screen for a choice. The button is found by Android's own Restart
-     * label in the TV's current language, so it works in any language.
-     */
-    static void restart() {
-        HomeKeyService service = running;
-        if (service == null) return;
-        service.performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
-        service.pressRestart(0);
-    }
-
-    private void pressRestart(int attempt) {
-        if (attempt > 20) {
-            performGlobalAction(GLOBAL_ACTION_BACK);   // no Restart button found: close the system menu again
-            return;
-        }
-        handler.postDelayed(() -> {
-            if (!clickRestartButton()) pressRestart(attempt + 1);
-        }, 100);
-    }
-
-    private boolean clickRestartButton() {
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null || !"com.android.systemui".contentEquals(String.valueOf(root.getPackageName()))) return false;
-        int id = android.content.res.Resources.getSystem().getIdentifier("global_action_restart", "string", "android");
-        if (id == 0) return false;
-        String label = android.content.res.Resources.getSystem().getString(id);
-        for (AccessibilityNodeInfo text : root.findAccessibilityNodeInfosByText(label)) {
-            if (text.getText() == null || !label.contentEquals(text.getText())) continue;
-            for (AccessibilityNodeInfo n = text; n != null; n = n.getParent()) {
-                if (n.isClickable()) return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            }
-        }
-        return false;
     }
 
     static boolean powerOnRedirect(String liveTv, CharSequence pkg, long now, long armedUntil) {

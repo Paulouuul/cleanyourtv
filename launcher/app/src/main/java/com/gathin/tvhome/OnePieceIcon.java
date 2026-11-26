@@ -48,7 +48,6 @@ final class OnePieceIcon extends Drawable {
         if (res == R.drawable.ic_apps) return MAP;
         if (res == R.drawable.ic_swap_vert) return CHEST;
         if (res == R.drawable.ic_power) return LANTERN;
-        if (res == R.drawable.ic_restart) return ANCHOR;
         return -1;
     }
 

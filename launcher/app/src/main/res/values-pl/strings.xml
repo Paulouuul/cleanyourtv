@@ -67,9 +67,11 @@
     <string name="off">Wył.</string>
     <string name="enable">Włącz</string>
     <string name="dock_edit">Edytuj dock</string>
-    <string name="power_menu">Wyłącz lub uruchom ponownie…</string>
+    <string name="power_menu">Wyłącz…</string>
     <string name="power_off">Wyłącz</string>
-    <string name="power_restart">Uruchom ponownie</string>
+    <string name="power_confirm">Wyłączyć telewizor?</string>
+    <string name="power_yes">Tak</string>
+    <string name="power_no">Nie</string>
     <string name="skin_state">Skórka motywu: %1$s</string>
     <string name="dock_edit_hint">Wybierz miejsce w docku do zmiany i naciśnij OK. Wstecz, aby zakończyć.</string>
     <string name="dock_edit_pick_app">Teraz wybierz aplikację, która ma się tam znaleźć, i naciśnij OK. Wstecz, aby wybrać inne miejsce.</string>

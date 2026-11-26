@@ -67,9 +67,11 @@
     <string name="off">إيقاف</string>
     <string name="enable">تفعيل</string>
     <string name="dock_edit">تعديل شريط التطبيقات</string>
-    <string name="power_menu">إيقاف التشغيل أو إعادة التشغيل…</string>
+    <string name="power_menu">إيقاف التشغيل…</string>
     <string name="power_off">إيقاف التشغيل</string>
-    <string name="power_restart">إعادة التشغيل</string>
+    <string name="power_confirm">إيقاف تشغيل التلفزيون؟</string>
+    <string name="power_yes">نعم</string>
+    <string name="power_no">لا</string>
     <string name="skin_state">مظهر السمة: %1$s</string>
     <string name="dock_edit_hint">اختر الموضع الذي تريد تغييره في الشريط واضغط موافق. اضغط رجوع للإنهاء.</string>
     <string name="dock_edit_pick_app">اختر الآن التطبيق الذي تريد وضعه هناك واضغط موافق. اضغط رجوع لاختيار موضع آخر.</string>

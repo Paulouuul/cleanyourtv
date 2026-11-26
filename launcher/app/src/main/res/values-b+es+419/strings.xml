@@ -4,9 +4,11 @@
     <string name="inputs">Entradas</string>
     <string name="wifi">Wi-Fi</string>
     <string name="settings">Configuración</string>
-    <string name="power_menu">Apagar o reiniciar…</string>
+    <string name="power_menu">Apagar…</string>
     <string name="power_off">Apagar</string>
-    <string name="power_restart">Reiniciar</string>
+    <string name="power_confirm">¿Apagar la TV?</string>
+    <string name="power_yes">Sí</string>
+    <string name="power_no">No</string>
     <string name="skin_state">Skin del tema: %1$s</string>
     <string name="choose_input">Entradas</string>
     <string name="connected">Conectado</string>
