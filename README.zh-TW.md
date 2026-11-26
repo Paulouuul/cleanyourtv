@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · 正體中文 · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · <a href="README.uz.md">Oʻzbekcha</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
+  <a href="CLEANYOURTV.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · 正體中文 · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · <a href="README.uz.md">Oʻzbekcha</a> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 透過區域網路連接 Android TV 或 Google TV，停用不需要的預載應用程式、廣告和遙測服務，並在相容的裝置上安裝簡潔的原生啟動器。無須 root、刷機或 USB 傳輸線；清理工具只停用應用程式，不解除安裝，並提供還原腳本。
 
-本文介紹通用功能與操作方式。不同機型、地區和韌體的套件及限制可能不同，請先核對自己的裝置。最新功能以[英文 README](README.md)為準，各機型的測試紀錄請見[機型清單](examples/README.md)。
+本文介紹通用功能與操作方式。不同機型、地區和韌體的套件及限制可能不同，請先核對自己的裝置。最新功能以[英文 README](CLEANYOURTV.md)為準，各機型的測試紀錄請見[機型清單](examples/README.md)。
 
 **Samsung、LG、Roku 或其他非 Android 電視？** CleanYourTV 無法在這些電視上執行，但仍可用遙控器逐步關閉追蹤功能：[cleanyour.tv/not-android](https://cleanyour.tv/not-android)。
 
@@ -400,7 +400,7 @@ TV_HOST=192.168.1.50 tools/venv/bin/python -I tools/check.py "examples/<your tv>
 
 **也能封鎖應用程式內的廣告嗎？支援 AirPlay 嗎？**
 
-Android 9 以上的私人 DNS 是可選用的系統功能，並非啟動器本身的廣告過濾能力。DNS 解析服務會看見電視的 DNS 查詢，也無法移除和影片來自相同伺服器的 YouTube 廣告。AirPlay 並非內建功能，需要其他應用程式。私人 DNS 的選用方案與還原方式見[英文常見問題](docs/faq.md#can-it-block-ads-inside-apps-too)，AirPlay 見[主頁常見問題](README.md#questions-people-ask)。
+Android 9 以上的私人 DNS 是可選用的系統功能，並非啟動器本身的廣告過濾能力。DNS 解析服務會看見電視的 DNS 查詢，也無法移除和影片來自相同伺服器的 YouTube 廣告。AirPlay 並非內建功能，需要其他應用程式。私人 DNS 的選用方案與還原方式見[英文常見問題](docs/faq.md#can-it-block-ads-inside-apps-too)，AirPlay 見[主頁常見問題](CLEANYOURTV.md#questions-people-ask)。
 
 **電視設定中還有哪些隱私選項可調整？**
 
@@ -420,7 +420,7 @@ Google TV 可檢查廣告個人化、位置、使用情況與診斷、持續掃�
 
 ## 聯絡與安全通報
 
-電視使用問題請到 [GitHub Discussions](https://github.com/Gathin23/cleanyourtv/discussions) 討論。媒體與其他聯絡方式見[英文聯絡資訊](README.md#contact)。安全漏洞請透過儲存庫的 [Security 頁面](https://github.com/Gathin23/cleanyourtv/security)私下回報，詳見 [`SECURITY.md`](SECURITY.md)。
+電視使用問題請到 [GitHub Discussions](https://github.com/Gathin23/cleanyourtv/discussions) 討論。媒體與其他聯絡方式見[英文聯絡資訊](CLEANYOURTV.md#contact)。安全漏洞請透過儲存庫的 [Security 頁面](https://github.com/Gathin23/cleanyourtv/security)私下回報，詳見 [`SECURITY.md`](SECURITY.md)。
 
 ## 法律聲明
 

@@ -1500,4 +1500,4 @@ On YouTube and Bilibili, newest first; views as of 9 Nov.
 | 아하! AI테크 | [TV 광고 치우는 AI 나왔다? TV 바이브핵 드디어 공개!](https://www.youtube.com/watch?v=qVCDr6Gd0wg) | 18&nbsp;Oct | 62 |
 | Peter Ai News | [666 Developers Star This Ad-Wipe TV Hack! #ai #viral #claude #shorts](https://www.youtube.com/watch?v=bdVdHVYb3Zs) | 18&nbsp;Oct | 20 |
 
-[Back to the README](../README.md)
+[Back to the README](../CLEANYOURTV.md)

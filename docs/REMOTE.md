@@ -77,7 +77,7 @@ connect from another network.
 
 ## Connecting
 
-Ask them to turn on debugging exactly as in the [Quick start](../README.md#quick-start), then:
+Ask them to turn on debugging exactly as in the [Quick start](../CLEANYOURTV.md#quick-start), then:
 
 ```bash
 TV_HOST=100.x.y.z tools/tv.py --probe
@@ -129,7 +129,7 @@ With option B, use the TV's local address instead of `100.x.y.z`.
 
 ## Afterwards
 
-Close ADB as the [README](../README.md) FAQ "Isn't ADB access a security hole?" does, and check it
+Close ADB as the [README](../CLEANYOURTV.md) FAQ "Isn't ADB access a security hole?" does, and check it
 before you remove the access: once the tunnel is gone, nobody can check from outside their home.
 `<tv ip>` is the address you connected to: `100.x.y.z`, or the TV's local address with option B.
 

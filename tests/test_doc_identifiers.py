@@ -159,7 +159,7 @@ class ReaderTest(unittest.TestCase):
 class DocIdentifiersTest(unittest.TestCase):
     def test_pages_are_read(self):
         read = {path.relative_to(ROOT).as_posix() for path in pages(ROOT)}
-        for page in ("README.md", "docs/REMOTE.md", "docs/devices/coop-cotv-0001.md",
+        for page in ("CLEANYOURTV.md", "docs/REMOTE.md", "docs/devices/coop-cotv-0001.md",
                      "examples/tcl-50dp660/debloat.txt", "docs/devices/tcl-50dp660.txt"):
             self.assertIn(page, read)
         self.assertIn(".sh", SUFFIXES, "a folder's own scripts are read too")

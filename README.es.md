@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Leer en: <a href="README.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · <a href="README.uz.md">Oʻzbekcha</a> · <a href="README.fr.md">Français</a> · Español
+  Leer en: <a href="CLEANYOURTV.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · <a href="README.uz.md">Oʻzbekcha</a> · <a href="README.fr.md">Français</a> · Español
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@ No se necesita root, ni reinstalar el firmware, ni usar cables USB. Las aplicaci
 
 Esta página describe las características principales y su uso general. Cada modelo de televisor, región y versión de firmware cuenta con su propia lista de aplicaciones y particularidades; consulta primero la información específica de tu televisor.
 
-En caso de discrepancia, prevalece el [README en inglés](README.md). Las notas específicas de cada modelo se encuentran en la [lista de televisores compatibles](examples/README.md).
+En caso de discrepancia, prevalece el [README en inglés](CLEANYOURTV.md). Las notas específicas de cada modelo se encuentran en la [lista de televisores compatibles](examples/README.md).
 
 > [!WARNING]
 > **¿Tu televisor es Samsung, LG, Roku o de otra marca que no utiliza Android?**

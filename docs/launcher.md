@@ -1,6 +1,6 @@
 # The launcher
 
-[Back to the README](../README.md#the-launcher)
+[Back to the README](../CLEANYOURTV.md#the-launcher)
 
 A small native home screen for Android TV: **about 572 KB**, plain Java, built for TVs with 1 GB of RAM.
 No blur, no video, no network permission, no background services. This page has the details the
@@ -78,7 +78,7 @@ The launcher's own page has these rows, top to bottom:
 **Change the default home:** Launcher settings and the optional Default-home tile
 (`show_home_settings_shortcut`) open Android's home picker. Choose the original launcher to stop using
 CleanYourTV as Home, or CleanYourTV to return. The original launcher must be enabled; if the install
-script disabled it, run the [restore script](../README.md#restoring-your-tv) first. Some TVs provide no
+script disabled it, run the [restore script](../CLEANYOURTV.md#restoring-your-tv) first. Some TVs provide no
 home picker.
 
 ## Languages

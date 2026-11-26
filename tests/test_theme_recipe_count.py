@@ -71,7 +71,7 @@ def steps_naming(text, needle):
 # as a paragraph and `docs/workflows/theme.md` as a numbered step, and all three carry both phrases.
 CLAIM_BLOCK = re.compile(r"(?is)bump the count.*?rather than the rule")
 # `README.md`, `README.pt-BR.md`, `README.he.md`: a front page, as the sentence names it.
-FRONT_PAGE = re.compile(r"README[A-Za-z-]*(?:\.[A-Za-z-]+)*\.md")
+FRONT_PAGE = re.compile(r"CLEANYOURTV\.md|README[A-Za-z-]*(?:\.[A-Za-z-]+)*\.md")
 # `(the last four in digits)`, wrapped anywhere: how many of the pages named last write the count as a
 # number instead of a word.
 DIGITS_GROUP = re.compile(r"(?is)the last ([\w-]+)\s+in digits")
@@ -137,7 +137,7 @@ class RecipeTest(unittest.TestCase):
                          "tests/test_readme_theme_count.py fails a new theme folder until that sentence says\n"
                          "the same number, so without the step the recipe sends an author into a red suite")
         step = front[0]
-        self.assertIn("README.md", step,
+        self.assertIn("CLEANYOURTV.md", step,
                       "the step that changes the count does not say which page carries it: the Themes row is\n"
                       "in the front page's feature table, not themes/README.md")
         self.assertIn("test_readme_theme_count", step,
@@ -206,25 +206,25 @@ class RecipePageListTest(unittest.TestCase):
 
 class PageListReaderTest(unittest.TestCase):
     def test_a_wrapped_step_is_read_as_one_claim(self):
-        text = ("Then bump the count in the Themes row: `README.md`, `README.pt-BR.md` and\n"
+        text = ("Then bump the count in the Themes row: `CLEANYOURTV.md`, `README.pt-BR.md` and\n"
                 "`README.he.md` (the last two\nin digits), each in its own words; the three are today's\n"
                 "pages rather than the rule.")
         self.assertEqual(named_pages(text),
-                         (["README.md", "README.pt-BR.md", "README.he.md"], 2))
+                         (["CLEANYOURTV.md", "README.pt-BR.md", "README.he.md"], 2))
 
     def test_a_step_with_no_digits_group_reports_none(self):
-        text = "Then bump the count on `README.md`, rather than the rule."
-        self.assertEqual(named_pages(text), (["README.md"], None))
+        text = "Then bump the count on `CLEANYOURTV.md`, rather than the rule."
+        self.assertEqual(named_pages(text), (["CLEANYOURTV.md"], None))
 
     def test_a_page_named_outside_the_step_is_not_part_of_it(self):
         text = ("`README.he.md` is the page the row is written in.\n\n"
-                "Then bump the count on `README.md`, rather than the rule.")
-        self.assertEqual(named_pages(text)[0], ["README.md"])
+                "Then bump the count on `CLEANYOURTV.md`, rather than the rule.")
+        self.assertEqual(named_pages(text)[0], ["CLEANYOURTV.md"])
 
     def test_a_page_named_twice_is_listed_once(self):
-        text = ("1. Bump the count on `README.md` and `README.he.md`; `README.md` again, rather than the\n"
+        text = ("1. Bump the count on `CLEANYOURTV.md` and `README.he.md`; `CLEANYOURTV.md` again, rather than the\n"
                 "   rule.")
-        self.assertEqual(named_pages(text)[0], ["README.md", "README.he.md"])
+        self.assertEqual(named_pages(text)[0], ["CLEANYOURTV.md", "README.he.md"])
 
 
 class StepReaderTest(unittest.TestCase):

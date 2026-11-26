@@ -70,7 +70,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 THEMES = ROOT / "themes"
-FRONT = ROOT / "README.md"
+FRONT = ROOT / "CLEANYOURTV.md"
 
 # The row is `| **Themes** | ... N ship in [`themes/`](themes/)`. A count written as a word or as
 # digits is accepted, so rewording the cell stays free as long as the number is still there.
@@ -158,7 +158,7 @@ def theme_folders(root=THEMES):
 
 def front_pages(root=ROOT):
     """Every front page: README.md and the translations beside it."""
-    return sorted(p for p in root.glob("README*.md") if p.is_file())
+    return sorted(p for p in [*root.glob("CLEANYOURTV.md"), *root.glob("README.*.md")] if p.is_file())
 
 
 def claims(text):
@@ -220,7 +220,7 @@ class ReadmeThemeCountTest(unittest.TestCase):
         # stating its count in digits ("28 thèmes"), like README.tr.md and README.pt-BR.md.
         # README.es.md is the tenth, stating its count in digits ("29 temas").
         self.assertEqual(sorted(set(stating)),
-                         ["README.de.md", "README.es.md", "README.fr.md", "README.he.md", "README.md", "README.nl.md",
+                         ["CLEANYOURTV.md", "README.de.md", "README.es.md", "README.fr.md", "README.he.md", "README.nl.md",
                           "README.pt-BR.md", "README.tr.md", "README.uk.md", "README.uz.md"],
                          "the front pages that state the theme count are not the ten that did: "
                          f"{sorted(set(stating))}")
@@ -254,7 +254,7 @@ class CountTest(unittest.TestCase):
             (root / "aurora").mkdir()
             (root / "aurora" / "config.json").write_text("{}", encoding="utf-8")
             (root / "wallpapers").mkdir()  # a picture dump, not a theme
-            (root / "README.md").write_text("not a folder", encoding="utf-8")
+            (root / "CLEANYOURTV.md").write_text("not a folder", encoding="utf-8")
             self.assertEqual(["aurora"], theme_folders(root))
 
     def test_a_translated_sentence_is_read(self):
@@ -378,11 +378,11 @@ class CountTest(unittest.TestCase):
     def test_every_front_page_in_a_stand_in_tree_is_walked(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "README.md").write_text("eleven ship in [`themes/`](themes/)", encoding="utf-8")
+            (root / "CLEANYOURTV.md").write_text("eleven ship in [`themes/`](themes/)", encoding="utf-8")
             (root / "README.de.md").write_text("Zehn liegen in [`themes/`](themes/)", encoding="utf-8")
             (root / "docs").mkdir()
             (root / "docs" / "README.other.md").write_text("nothing", encoding="utf-8")
-            self.assertEqual(["README.de.md", "README.md"],
+            self.assertEqual(["CLEANYOURTV.md", "README.de.md"],
                              [p.name for p in front_pages(root)])
 
     def test_a_page_that_names_one_too_few_is_refused(self):

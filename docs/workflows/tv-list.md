@@ -49,7 +49,7 @@
    has room for `Google TV launcher on Android TV 11`, the short one for `Google TV 11`.
    `tests/test_examples.py` checks the file.
 5. Change nothing outside the folder. The tables in `examples/README.md` and `README.nl.md`, the brand grid in
-   `README.md`, `README.nl.md`, `README.de.md`, `README.uk.md` and `README.tr.md`, and the counts (the
+   `CLEANYOURTV.md`, `README.nl.md`, `README.de.md`, `README.uk.md` and `README.tr.md`, and the counts (the
    `TV models` number in the card's alt text) are generated from every `tv.json` by `tools/gen_tables.py`,
    which a maintainer runs after merging; CI compares them only on `main`.
    One copy of those counts is outside the generated blocks: the story sentence that shows the card on the same
@@ -59,7 +59,7 @@
    to the alt text beside it (`README.de.md states (TV models, brands) (380, 101) in its story sentence and its
    card states (387, 103)`), so they move in the same commit. The sentence is not only on those five pages:
    `README.pt-BR.md`, `README.he.md`, `README.uz.md` and `README.fr.md` carry the story paragraph without the
-   card, so `tools/gen_tables.py` writes nothing there and the same check holds their pair to `README.md`'s alt
+   card, so `tools/gen_tables.py` writes nothing there and the same check holds their pair to `CLEANYOURTV.md`'s alt
    text in the same words a card page's pair is held to - a regeneration that bumps the five pages above and
    stops leaves those four red. A translation that copies the story paragraph joins them the day it lands.
    The brand grid itself is hand-kept on one page:

@@ -46,7 +46,7 @@ RECIPE = ROOT / "docs" / "workflows" / "translation.md"
 # README.uz.md is the page it could not see: its word is `til`, not the Turkish `dil` the table carries,
 # so the cover test below - which reads a row written in one of these words - passed over it.
 LANG_ROW = {
-    "README.md": "languages",
+    "CLEANYOURTV.md": "languages",
     "README.de.md": "Sprachen",
     "README.es.md": "idiomas",
     "README.fr.md": "langues",
@@ -65,7 +65,7 @@ ROW = re.compile(r"^\| \*\*(\d+) ([^*|\n]+?)\*\* \|", re.M)
 
 def front_pages(root=ROOT):
     """Every front page: README.md and the translations beside it."""
-    return sorted(p for p in root.glob("README*.md") if p.is_file())
+    return sorted(p for p in [*root.glob("CLEANYOURTV.md"), *root.glob("README.*.md")] if p.is_file())
 
 
 def rows(text):
@@ -207,11 +207,11 @@ class TheReader(unittest.TestCase):
     def test_the_front_pages_are_walked(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "README.md").write_text("| **1 languages** | x |", encoding="utf-8")
+            (root / "CLEANYOURTV.md").write_text("| **1 languages** | x |", encoding="utf-8")
             (root / "README.he.md").write_text("| **1 שפות** | x |", encoding="utf-8")
             (root / "docs").mkdir()
             (root / "docs" / "README.other.md").write_text("nothing", encoding="utf-8")
-            self.assertEqual(["README.he.md", "README.md"],
+            self.assertEqual(["CLEANYOURTV.md", "README.he.md"],
                              [p.name for p in front_pages(root)])
 
 

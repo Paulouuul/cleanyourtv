@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import gen_tables  # noqa: E402  (needs tools/ on the path first)
 from test_gen_tables import add, run, tree, tv  # noqa: E402
 
-PAGES = ["README.md", "examples/README.md", "tools/readme_stats.py"]
+PAGES = ["CLEANYOURTV.md", "examples/README.md", "tools/readme_stats.py"]
 LIMIT = 16 * 1024          # what `ulimit -f 16` gives a shell: 16 KB, in bytes once it reaches a process
 
 
@@ -49,7 +49,7 @@ def run_limited(root, *args, limit=LIMIT):
 def padded(tmp):
     """A small checkout whose README is over the limit, and a third list, so a run has pages to rewrite."""
     root = tree(tmp, [("tcl-a", tv("TCL A", "TCL")), ("tcl-b", tv("TCL B", "TCL"))])
-    readme = root / "README.md"
+    readme = root / "CLEANYOURTV.md"
     readme.write_text(readme.read_text(encoding="utf-8") + "Hand-written text stays. " * 700, encoding="utf-8")
     add(root, "tcl-c", tv("TCL C", "TCL"))
     return root
@@ -75,7 +75,7 @@ class TheWriteThatCannotFinishTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = padded(tmp)
             done = run_limited(root)
-            self.assertIn("cannot write README.md", done.stderr)
+            self.assertIn("cannot write CLEANYOURTV.md", done.stderr)
             self.assertIn("File too large", done.stderr)
             self.assertIn("Nothing was written", done.stderr)
             self.assertNotIn("Traceback", done.stderr)
@@ -145,17 +145,17 @@ class TheSetIsWrittenTogetherTest(unittest.TestCase):
             add(root, "tcl-c", tv("TCL C", "TCL"))
             code, out = run(root)
             self.assertEqual(code, 0, out)
-            self.assertIn("Updated: README.md, examples/README.md, tools/readme_stats.py", out)
+            self.assertIn("Updated: CLEANYOURTV.md, examples/README.md, tools/readme_stats.py", out)
 
 
 class TheReplacedPageTest(unittest.TestCase):
     def test_an_existing_page_keeps_the_mode_it_had(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            page = root / "README.md"
+            page = root / "CLEANYOURTV.md"
             page.write_text("old\n", encoding="utf-8")
             os.chmod(page, 0o640)
-            gen_tables.publish(root, [("README.md", "new\n")])
+            gen_tables.publish(root, [("CLEANYOURTV.md", "new\n")])
             self.assertEqual(page.read_text(encoding="utf-8"), "new\n")
             self.assertEqual(stat.S_IMODE(page.stat().st_mode), 0o640)
 
@@ -164,9 +164,9 @@ class TheReplacedPageTest(unittest.TestCase):
             root = Path(tmp)
             real = root / "real-readme.md"
             real.write_text("old\n", encoding="utf-8")
-            link = root / "README.md"
+            link = root / "CLEANYOURTV.md"
             link.symlink_to(real.name)     # a checkout whose page is a link to a copy elsewhere
-            gen_tables.publish(root, [("README.md", "new\n")])
+            gen_tables.publish(root, [("CLEANYOURTV.md", "new\n")])
             self.assertTrue(link.is_symlink(), "the run replaced the link with a regular file")
             self.assertEqual(real.read_text(encoding="utf-8"), "new\n")
 

@@ -345,9 +345,9 @@ class FolderLinkTest(unittest.TestCase):
     def test_a_folder_that_is_not_there_is_left_to_the_link_check(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "README.md").write_text("[gone](examples/moved/#second-unit)\n", encoding="utf-8")
+            (root / "CLEANYOURTV.md").write_text("[gone](examples/moved/#second-unit)\n", encoding="utf-8")
             self.assertEqual([], dangling_anchors(root))
-            self.assertEqual([("README.md", "examples/moved/#second-unit")], broken_links(root))
+            self.assertEqual([("CLEANYOURTV.md", "examples/moved/#second-unit")], broken_links(root))
 
 
 if __name__ == "__main__":

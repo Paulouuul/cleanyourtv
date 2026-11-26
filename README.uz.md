@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Oʻqing: <a href="README.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · Oʻzbekcha · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
+  Oʻqing: <a href="CLEANYOURTV.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · Oʻzbekcha · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a>
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@ Bu sahifa asosiy imkoniyatlarni va ulardan qanday foydalanishni koʻrsatadi. Har
 firmware versiyasining oʻz dasturlar roʻyxati va cheklovlari bor, shuning uchun avval televizoringizga oid
 maʼlumotlarni tekshiring.
 
-Farq boʻlsa, [inglizcha README](README.md) asosiy hisoblanadi. Har bir modelga oid izohlar
+Farq boʻlsa, [inglizcha README](CLEANYOURTV.md) asosiy hisoblanadi. Har bir modelga oid izohlar
 [qoʻllab-quvvatlanadigan televizorlar roʻyxatida](examples/README.md).
 
 > [!WARNING]

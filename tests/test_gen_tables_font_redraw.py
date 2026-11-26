@@ -119,7 +119,7 @@ class RedrawFailureTest(unittest.TestCase):
             # case the card scripts answer with their own line and exit 1.
             font.write_bytes(b"PK\x03\x04 not a font\n")
             done = run(root, "Fredoka.ttf", cwd=caller)
-            readme = (root / "README.md").read_text(encoding="utf-8")
+            readme = (root / "CLEANYOURTV.md").read_text(encoding="utf-8")
             pictures = [root / "docs" / "stats.png", root / "docs" / "card.jpg"]
         self.assertEqual(done.returncode, 1, f"a redraw that could not happen exited {done.returncode}")
         self.assertIn("docs/stats.png was not redrawn", done.stderr, done.stderr)

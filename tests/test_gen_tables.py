@@ -80,7 +80,7 @@ def tree(tmp, lists):
     root = Path(tmp)
     (root / "examples").mkdir()
     (root / "tools").mkdir()
-    (root / "README.md").write_text(README, encoding="utf-8")
+    (root / "CLEANYOURTV.md").write_text(README, encoding="utf-8")
     (root / "examples" / "README.md").write_text(EXAMPLES, encoding="utf-8")
     (root / "tools" / "readme_stats.py").write_text(STATS, encoding="utf-8")
     for lang in ("de", "fr"):
@@ -147,7 +147,7 @@ class ThisRepositoryTest(unittest.TestCase):
         self.assertEqual(gen_tables.render(ROOT, texts=once), once)
 
     def test_the_brand_grid_counts_every_folder_once(self):
-        readme = gen_tables.render(ROOT)["README.md"]
+        readme = gen_tables.render(ROOT)["CLEANYOURTV.md"]
         block = section(readme, "tv-brands")
         top = grid(block)
         line, summary = below_grid(block)
@@ -165,7 +165,7 @@ class ThisRepositoryTest(unittest.TestCase):
                                   f"{len(names)} projector brands</summary>")
 
     def test_the_grid_is_the_thirty_brands_with_the_most_lists(self):
-        block = section(gen_tables.render(ROOT)["README.md"], "tv-brands")
+        block = section(gen_tables.render(ROOT)["CLEANYOURTV.md"], "tv-brands")
         self.assertEqual(block[:2], GRID_HEAD)
         rows = [r for r in block if r.startswith("| [")]
         self.assertEqual(len(rows), 5, "30 brands in 6 columns make 5 rows")
@@ -181,9 +181,9 @@ class ThisRepositoryTest(unittest.TestCase):
 
     def test_the_readme_has_no_table_and_the_translation_keeps_its_block(self):
         texts = gen_tables.render(ROOT)
-        self.assertFalse(gen_tables.has_markers(texts["README.md"], "tv-table"))
+        self.assertFalse(gen_tables.has_markers(texts["CLEANYOURTV.md"], "tv-table"))
         self.assertIn("README.nl.md", texts)
-        self.assertEqual(section(texts["README.nl.md"], "tv-brands"), section(texts["README.md"], "tv-brands"))
+        self.assertEqual(section(texts["README.nl.md"], "tv-brands"), section(texts["CLEANYOURTV.md"], "tv-brands"))
 
     def test_both_tables_are_in_the_same_alphabetical_order(self):
         texts = gen_tables.render(ROOT)
@@ -226,7 +226,7 @@ class GeneratorTest(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("gen_tables.py", out)
             run(root)
-            readme = (root / "README.md").read_text(encoding="utf-8")
+            readme = (root / "CLEANYOURTV.md").read_text(encoding="utf-8")
             examples = (root / "examples/README.md").read_text(encoding="utf-8")
             self.assertEqual(section(readme, "tv-table")[2:],
                              ["| Sony B | Android TV 11 |", "| TCL A | Android TV 11 |", "| TCL C | Android TV 11 |"])
@@ -258,7 +258,7 @@ class GeneratorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(gen_tables, "TOP", 2):
             root = tree(tmp, lists)
             run(root)
-            readme = (root / "README.md").read_text(encoding="utf-8")
+            readme = (root / "CLEANYOURTV.md").read_text(encoding="utf-8")
             # Most lists first in the grid, alphabetical within a count. Under it, in the <details>: the other
             # brands with more than one list, then single-list brands, then the projector makers. BenQ also
             # makes TVs, so it stays off the projector line.
@@ -288,10 +288,10 @@ class GeneratorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = tree(tmp, [("tcl-a", tv("TCL A", "TCL"))])
             no_table = README.replace(README[README.index("<details>"):README.index("</details>") + 10], "")
-            (root / "README.md").write_text(no_table, encoding="utf-8")
+            (root / "CLEANYOURTV.md").write_text(no_table, encoding="utf-8")
             (root / "README.nl.md").write_text(README, encoding="utf-8")
             self.assertEqual(run(root)[0], 0)
-            readme = (root / "README.md").read_text(encoding="utf-8")
+            readme = (root / "CLEANYOURTV.md").read_text(encoding="utf-8")
             dutch = (root / "README.nl.md").read_text(encoding="utf-8")
             self.assertNotIn("tv-table", readme)
             self.assertEqual(section(dutch, "tv-brands"), section(readme, "tv-brands"))
@@ -307,7 +307,7 @@ class GeneratorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = tree(tmp, lists)
             run(root)
-            readme = (root / "README.md").read_text(encoding="utf-8")
+            readme = (root / "CLEANYOURTV.md").read_text(encoding="utf-8")
             examples = (root / "examples/README.md").read_text(encoding="utf-8")
             # Case is ignored: "zulu" still sorts last.
             self.assertEqual([r.split(" | ")[0][2:] for r in section(readme, "tv-table")[2:]],
@@ -412,7 +412,7 @@ diff --git a/examples/README.md b/examples/README.md
             self.assertEqual(edited["brand"], "TCL")
             self.assertEqual(run(root, "--check")[0], 0)
             self.assertIn("| TCL 55L8 (China, x32a0) | Android TV 9 (CN build) |",
-                          (root / "README.md").read_text(encoding="utf-8"))
+                          (root / "CLEANYOURTV.md").read_text(encoding="utf-8"))
 
     def test_a_row_main_has_changed_since_is_not_overwritten(self):
         # The PR edits the row as it was ("ads off"); main has moved on, so taking the PR's row would undo main.

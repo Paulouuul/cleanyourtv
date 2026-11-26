@@ -57,7 +57,7 @@ def steps(body=None):
 
 def the_count_step():
     """The step that sends the author to README.md, i.e. the one that carries the second number."""
-    return [text for _, text in steps() if "README.md" in text]
+    return [text for _, text in steps() if "CLEANYOURTV.md" in text]
 
 
 def count_line_phrase():
@@ -98,7 +98,7 @@ class TheCheckStillAsksTest(unittest.TestCase):
         self.assertEqual(counted, 51)
         self.assertIsNotNone(error, "a page stating one project fewer than it holds was accepted")
         self.assertIn("bump the number", error)
-        self.assertIn("README.md", error, "the refusal should still send the author to README's spelled number")
+        self.assertIn("CLEANYOURTV.md", error, "the refusal should still send the author to README's spelled number")
 
     def test_an_agreeing_page_is_quiet(self):
         stated, counted, error = count.audit(page(50, 50))

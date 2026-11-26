@@ -153,7 +153,7 @@ def clause_date(clause):
 def dated_pages(root=ROOT):
     """[(name, date)] for every front page whose story dates the numbers, in name order."""
     out = []
-    for path in sorted(Path(root).glob("README*.md")):
+    for path in sorted([*Path(root).glob("CLEANYOURTV.md"), *Path(root).glob("README.*.md")]):
         date = clause_date(date_clause(path.read_text(encoding="utf-8")))
         if date is not None:
             out.append((path.name, date))
@@ -208,7 +208,7 @@ class TreeTest(unittest.TestCase):
 
     def test_the_pages_that_date_the_numbers_today(self):
         self.assertEqual(
-            {"README.md", "README.de.md", "README.fr.md", "README.nl.md", "README.pt-BR.md", "README.tr.md",
+            {"CLEANYOURTV.md", "README.de.md", "README.fr.md", "README.nl.md", "README.pt-BR.md", "README.tr.md",
              "README.uk.md", "README.uz.md"},
             {name for name, _ in dated_pages()},
             "the front pages that close the coverage sentence with a date; a translation that copies the "
@@ -228,7 +228,7 @@ class ReaderTest(unittest.TestCase):
 
     def test_each_page_s_clause_parses_to_its_own_day(self):
         expected = {
-            "README.md": (2026, 11, 9),
+            "CLEANYOURTV.md": (2026, 11, 9),
             "README.de.md": (2026, 11, 9),
             "README.fr.md": (2026, 11, 9),
             "README.nl.md": (2026, 11, 9),
@@ -273,11 +273,11 @@ class ReaderTest(unittest.TestCase):
                 "# Press\n\n412 articles.\n\n| Outlet | [Headline](https://example.com/a) | 31&nbsp;Oct |\n"
                 "\n## Videos\n\n| Channel | [Title](https://example.com/v) | 28&nbsp;Oct | Views |\n",
                 encoding="utf-8")
-            (root / "README.md").write_text(
+            (root / "CLEANYOURTV.md").write_text(
                 "# CleanYourTV\n\nThe lists now cover 450 TV models from 122 brands. The coverage: 412 articles "
                 "from 54 countries and 229 videos on YouTube and Bilibili, all in [docs/PRESS.md](docs/PRESS.md) "
                 "(numbers as of 30 October 2026).\n", encoding="utf-8")
-            self.assertEqual([("README.md", (2026, 10, 30), (10, 31))], stale_pages(root))
+            self.assertEqual([("CLEANYOURTV.md", (2026, 10, 30), (10, 31))], stale_pages(root))
 
     def test_the_same_page_a_day_later_is_not_reported(self):
         with tempfile.TemporaryDirectory() as root:
@@ -287,7 +287,7 @@ class ReaderTest(unittest.TestCase):
                 "# Press\n\n| Outlet | [Headline](https://example.com/a) | 31&nbsp;Oct |\n"
                 "\n## Videos\n\n| Channel | [Title](https://example.com/v) | 28&nbsp;Oct | Views |\n",
                 encoding="utf-8")
-            (root / "README.md").write_text(
+            (root / "CLEANYOURTV.md").write_text(
                 "# CleanYourTV\n\nThe coverage: 412 articles from 54 countries and 229 videos on YouTube and "
                 "Bilibili, all in [docs/PRESS.md](docs/PRESS.md) (numbers as of 31 October 2026).\n",
                 encoding="utf-8")

@@ -63,13 +63,13 @@ class NothingWrittenTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, patch = checkout(tmp)
             break_it(root)
-            before = (root / "README.md").read_bytes()
+            before = (root / "CLEANYOURTV.md").read_bytes()
             code, out, err = run("--root", str(root), "--adopt", str(patch))
             self.assertEqual(code, 2, err)
             self.assertEqual(out, "", "a refused run printed a folder it did not write")
             self.assertNotIn("Traceback", err)
             self.assertFalse((root / "examples" / "tcl-d" / "tv.json").exists(), "the patch was applied anyway")
-            self.assertEqual((root / "README.md").read_bytes(), before, "the tables were rewritten")
+            self.assertEqual((root / "CLEANYOURTV.md").read_bytes(), before, "the tables were rewritten")
             return err
 
     def test_not_valid_json(self):
