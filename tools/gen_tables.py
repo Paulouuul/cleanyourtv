@@ -270,7 +270,7 @@ def stats(text, entries, root):
     return text
 
 
-OWNED = ("README.md", "examples/README.md", "tools/readme_stats.py")
+OWNED = ("CLEANYOURTV.md", "examples/README.md", "tools/readme_stats.py")
 # The translated READMEs that carry the brand block too, written when the file is there - and the three
 # words each of them states its counts in, for the card's alt text ("345 TV models · 93 brands · 29
 # languages · ") and the "| **29 languages** |" row. The brand block is generated, so those numbers have
@@ -304,7 +304,7 @@ def render(root, texts=None):
     paths = list(OWNED) + [p for p in TRANSLATIONS if (texts or {}).get(p) or (root / p).is_file()]
     now = {p: (texts or {}).get(p) or (root / p).read_text(encoding="utf-8") for p in paths}
     out = {p: readme(now[p], entries, root, p, TRANSLATIONS.get(p, WORDS))
-           for p in ["README.md"] + paths[len(OWNED):]}
+           for p in ["CLEANYOURTV.md"] + paths[len(OWNED):]}
     out["examples/README.md"] = between(now["examples/README.md"], "tv-table", examples_rows(entries),
                                         "examples/README.md")
     out["tools/readme_stats.py"] = stats(now["tools/readme_stats.py"], entries, root)

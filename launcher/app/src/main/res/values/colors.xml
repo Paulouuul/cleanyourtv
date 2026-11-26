@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The blue-black behind Home, the Apps screen and the launcher settings when the One Piece skin is off. -->
+    <color name="screen_bg">#FF101419</color>
+</resources>

@@ -415,7 +415,7 @@ class CommandLineTest(MatchCase):
         self.assertIn(str(ROOT / "examples"), result.stderr)
 
     def test_the_readme_lists_the_tool(self):
-        self.assertIn("[`tools/match.py`](tools/match.py)", (ROOT / "README.md").read_text(encoding="utf-8"))
+        self.assertIn("[`tools/match.py`](tools/match.py)", (ROOT / "CLEANYOURTV.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

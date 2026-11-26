@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Lire en : <a href="README.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · <a href="README.uz.md">Oʻzbekcha</a> · Français · <a href="README.es.md">Español</a>
+  Lire en : <a href="CLEANYOURTV.md">English</a> · <a href="README.he.md" lang="he" dir="rtl">עברית</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">正體中文</a> · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.ja.md">日本語</a> · <a href="README.it.md">Italiano</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.de.md">Deutsch</a> · <a href="README.uk.md">Українська</a> · <a href="README.tr.md">Türkçe</a> · <a href="README.uz.md">Oʻzbekcha</a> · Français · <a href="README.es.md">Español</a>
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@ Cette page présente les principales fonctionnalités et la façon de les utilis
 chaque région et chaque version de firmware a ses propres applications et ses propres limites : vérifiez
 d'abord ce qui concerne votre téléviseur.
 
-En cas de divergence, le [README en anglais](README.md) fait foi. Les remarques propres à chaque modèle se
+En cas de divergence, le [README en anglais](CLEANYOURTV.md) fait foi. Les remarques propres à chaque modèle se
 trouvent dans la [liste des téléviseurs pris en charge](examples/README.md).
 
 > [!WARNING]

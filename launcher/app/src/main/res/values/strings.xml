@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Home</string>
+    <string name="app_name" translatable="false">One Piece</string>
     <string name="inputs">Inputs</string>
     <string name="wifi">Wi-Fi</string>
     <string name="settings">Settings</string>
@@ -39,6 +39,7 @@
     <string name="shamsi_month_bahman">Bahman</string>
     <string name="shamsi_month_esfand">Esfand</string>
     <string name="stats_cpu">CPU %1$d%%</string>
+    <string name="continue_watching">Continue watching</string>
     <string name="stats_memory">Memory %1$d / %2$d MB</string>
     <string name="stats_storage">Storage %1$s free</string>
     <string name="storage_gb_whole">%1$.0f GB</string>
@@ -47,10 +48,16 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN off</string>
     <string name="home_settings">Choose default home</string>
-    <string name="home_settings_help">Select your original home to stop using CleanYourTV as Home, or CleanYourTV to switch back. The original launcher must be enabled and your TV must provide a home picker; use the restore script first if it was disabled.</string>
+    <string name="home_settings_help">Select your original home to stop using this launcher as Home, or this launcher (“Home” in the list) to switch back. The original launcher must be enabled and your TV must provide a home picker; use the restore script first if it was disabled.</string>
     <string name="launcher_settings">Launcher settings</string>
     <string name="native_settings">Native settings</string>
     <string name="columns_label">Apps per row</string>
+    <string name="apps_screen">Apps</string>
+    <string name="apps_screen_columns_label">Apps per row on the Apps screen</string>
+    <string name="pick_app_title">Choose an app</string>
+    <string name="apps_move_hint">Arrows move the app. OK or Back to put it down.</string>
+    <string name="pinned_count_label">Pinned apps</string>
+    <string name="apps_uninstall">Uninstall</string>
     <string name="rows_below_dock_label">Rows below dock</string>
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>
@@ -69,6 +76,7 @@
     <string name="tv_settings">TV system settings</string>
     <string name="quick_picture">Display</string>
     <string name="quick_network">Network</string>
+    <string name="quick_sound">Sound</string>
     <string name="quick_apps">Apps</string>
     <string name="quick_apps_hint">Re-enable</string>
     <string name="on">On</string>
@@ -97,8 +105,15 @@
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
     <string name="dock_edit">Edit dock</string>
-    <!-- Settings menu: opens the system power menu (Restart on most TVs). -->
-    <string name="power_menu">Restart…</string>
+    <!-- Settings menu: opens the system power menu, with Power off and Restart. -->
+    <string name="power_menu">Power off…</string>
+    <!-- The launcher's power menu: its two buttons. Power off puts the TV in standby. -->
+    <string name="power_off">Power off</string>
+    <string name="power_confirm">Power off the TV?</string>
+    <string name="power_yes">Yes</string>
+    <string name="power_no">No</string>
+    <!-- Launcher settings, shown only when the theme has a skin: %s is On or Off. -->
+    <string name="skin_state">Theme skin: %1$s</string>
     <string name="dock_edit_hint">Choose the dock place to change and press OK. Back to finish.</string>
     <string name="dock_edit_pick_app">Now choose the app to put there and press OK. Back to choose another place.</string>
     <string name="tile_add_to_dock">Add to dock</string>
@@ -158,4 +173,6 @@
     <string name="clock_format_system">System</string>
     <string name="clock_format_12">12-hour</string>
     <string name="clock_format_24">24-hour</string>
+    <!-- One Piece skin: the speech bubble of Luffy's greeting on Home. -->
+    <string name="onepiece_greeting">My name is Monkey D. Luffy, and I\'m gonna be King of the Pirates!</string>
 </resources>

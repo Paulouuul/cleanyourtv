@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">בית</string>
     <string name="inputs">כניסות</string>
     <string name="wifi">Wi-Fi</string>
     <string name="settings">הגדרות</string>
@@ -37,6 +36,7 @@
     <string name="shamsi_month_bahman">בהמן</string>
     <string name="shamsi_month_esfand">אספנד</string>
     <string name="stats_cpu">מעבד %1$d%%</string>
+    <string name="continue_watching">המשך צפייה</string>
     <string name="stats_memory">זיכרון %1$d / %2$d MB</string>
     <string name="stats_storage">אחסון %1$s פנוי</string>
     <string name="storage_gb_whole">%1$.0f GB</string>
@@ -45,10 +45,16 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">ה־VPN כבוי</string>
     <string name="home_settings">בחירת מסך הבית כברירת מחדל</string>
-    <string name="home_settings_help">כדי להפסיק להשתמש ב־CleanYourTV כמסך הבית, יש לבחור במסך הבית המקורי. כדי לחזור, יש לבחור ב־CleanYourTV. אפליקציית מסך הבית המקורית חייבת להיות פעילה, והטלוויזיה צריכה לתמוך בבחירת מסך בית. אם האפליקציה הושבתה, יש להפעיל תחילה את סקריפט השחזור.</string>
+    <string name="home_settings_help">כדי להפסיק להשתמש ב־“בית” כמסך הבית, יש לבחור במסך הבית המקורי. כדי לחזור, יש לבחור ב־“בית”. אפליקציית מסך הבית המקורית חייבת להיות פעילה, והטלוויזיה צריכה לתמוך בבחירת מסך בית. אם האפליקציה הושבתה, יש להפעיל תחילה את סקריפט השחזור.</string>
     <string name="launcher_settings">הגדרות מסך הבית</string>
     <string name="native_settings">הגדרות היצרן</string>
     <string name="columns_label">אפליקציות בשורה</string>
+    <string name="apps_screen">אפליקציות</string>
+    <string name="apps_screen_columns_label">אפליקציות בכל שורה במסך האפליקציות</string>
+    <string name="pick_app_title">בחרו אפליקציה</string>
+    <string name="apps_move_hint">החצים מזיזים את האפליקציה. OK או חזרה כדי להניח אותה.</string>
+    <string name="pinned_count_label">אפליקציות מוצמדות</string>
+    <string name="apps_uninstall">הסרת התקנה</string>
     <string name="dock_opacity_label">עוצמת הרקע בשורת המועדפים</string>
     <string name="animations_state">הנפשות: %1$s</string>
     <string name="advanced_effects">אפקטים מתקדמים</string>
@@ -87,9 +93,15 @@
     <string name="quick_picture">תצוגה</string>
     <string name="quick_network">רשת</string>
     <string name="quick_apps">אפליקציות</string>
+    <string name="quick_sound">צליל</string>
     <string name="quick_apps_hint">הפעלת אפליקציות שהושבתו</string>
     <string name="dock_edit">עריכת שורת המועדפים</string>
-    <string name="power_menu">הפעלה מחדש…</string>
+    <string name="power_menu">כיבוי…</string>
+    <string name="power_off">כיבוי</string>
+    <string name="power_confirm">לכבות את הטלוויזיה?</string>
+    <string name="power_yes">כן</string>
+    <string name="power_no">לא</string>
+    <string name="skin_state">עיצוב ערכת הנושא: %1$s</string>
     <string name="dock_edit_hint">בחרו מקום בשורת המועדפים ולחצו אישור. חזרה לסיום.</string>
     <string name="dock_edit_pick_app">עכשיו בחרו את האפליקציה שתופיע שם ולחצו אישור. חזרה לבחירת מקום אחר.</string>
     <string name="tile_add_to_dock">הוספה לשורת המועדפים</string>

@@ -53,7 +53,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 PRESS = ROOT / "docs" / "PRESS.md"
-README = ROOT / "README.md"
+README = ROOT / "CLEANYOURTV.md"
 FEATURED = ROOT / "tools" / "readme_featured.py"
 PRESS_RECIPE = ROOT / "docs" / "workflows" / "press.md"
 
@@ -76,7 +76,7 @@ VIDEO_LINK = re.compile(r"\((https?://[^)\s]*(?:youtube\.com|bilibili\.com)/[^)\
 # are not.
 CARD_ALT = re.compile(r'src="docs/card(?:-halloween)?\.jpg"[^>]*?alt="([^"]*)"')
 # The front pages that show the card and repeat its numbers in the story section today.
-STORY_PAGES = ("README.md", "README.de.md", "README.nl.md", "README.uk.md", "README.tr.md")
+STORY_PAGES = ("CLEANYOURTV.md", "README.de.md", "README.nl.md", "README.uk.md", "README.tr.md")
 # Front pages that carry the story paragraph without the card: README.pt-BR.md, README.he.md and
 # README.uz.md have no docs/card.jpg, so card_alt_texts() never reaches them and none of the checks
 # above read the numbers they write. README.pt-BR.md said the totals README.md had when the
@@ -103,7 +103,7 @@ SENTENCE = re.compile(r"(?<=[.!?])\s+")
 def card_alt_texts():
     """{file name: alt text} for every README whose card image carries an alt text."""
     out = {}
-    for path in sorted(ROOT.glob("README*.md")):
+    for path in sorted([*ROOT.glob("CLEANYOURTV.md"), *ROOT.glob("README.*.md")]):
         match = CARD_ALT.search(path.read_text(encoding="utf-8"))
         if match:
             out[path.name] = match.group(1)
@@ -138,7 +138,7 @@ def story_pages(root=ROOT):
     carries the paragraph and no card, was read by nothing at all.
     """
     out = []
-    for path in sorted(Path(root).glob("README*.md")):
+    for path in sorted([*Path(root).glob("CLEANYOURTV.md"), *Path(root).glob("README.*.md")]):
         for paragraph in paragraphs(path.read_text(encoding="utf-8")):
             if PRESS_LINK.search(paragraph) and "YouTube" in paragraph:
                 out.append(path.name)
@@ -484,12 +484,12 @@ class StoryPagesTest(unittest.TestCase):
         # README.he.md landed with the paragraph and no card, so the walk over card_alt_texts() never saw
         # it. The paragraph is what a page is found by, and it is found wrapped, as README.uk.md writes it.
         with tempfile.TemporaryDirectory() as root:
-            self.write(root, "README.md", self.STORY + self.CARD)
+            self.write(root, "CLEANYOURTV.md", self.STORY + self.CARD)
             self.write(root, "README.he.md",
                        "הרשימות כיסו 450 דגמים מ־122 מותגים. סיקור בתקשורת: 412 כתבות\n"
                        "מ־54 מדינות ו־229 סרטונים ב־YouTube וב־Bilibili. [docs/PRESS.md](docs/PRESS.md)\n")
             self.write(root, "README.ja.md", self.CARD)  # a card, no paragraph yet
-            self.assertEqual(["README.he.md", "README.md"], story_pages(Path(root)))
+            self.assertEqual(["CLEANYOURTV.md", "README.he.md"], story_pages(Path(root)))
 
     def test_a_press_link_without_the_story_is_not_a_story_page(self):
         # A front page may link docs/PRESS.md elsewhere - its links section, say - without carrying the
@@ -597,7 +597,7 @@ class FrontPageTotalsTest(unittest.TestCase):
         # never reads them: README.pt-BR.md was left at 420 models and 108 brands while README.md's
         # alt text had moved to 433 and 114, and README.he.md repeated the pair with nothing reading
         # it. The card's alt text is the generated copy, so that is what these pages are held to.
-        card = card_totals(self.pages["README.md"])
+        card = card_totals(self.pages["CLEANYOURTV.md"])
         pages = [name for name in story_pages() if name not in self.pages]
         self.assertLessEqual(
             set(STORY_WITHOUT_CARD), set(pages),

@@ -14,7 +14,7 @@
    it used to point at.
 2. Bump the count by one everywhere it is stated: `SHOWCASE.md` opens with an `N projects so far.` line,
    and the "Built something on top?" row carries the same number on six translated front pages -
-   `README.md` ("... projects already live") and `README.pt-BR.md` ("que já reúne ... projetos") spell it
+   `CLEANYOURTV.md` ("... projects already live") and `README.pt-BR.md` ("que já reúne ... projetos") spell it
    in words, while `README.de.md`, `README.nl.md`, `README.uk.md`, `README.uz.md` and `README.fr.md` write
    it in digits, the shape a German compound or an Uzbek classified numeral cannot be read out of.
    `tests/test_showcase_project_count.py` counts the rows and reads every page in its COUNT_PAGES table

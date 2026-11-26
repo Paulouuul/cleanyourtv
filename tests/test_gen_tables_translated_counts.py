@@ -176,7 +176,7 @@ class TranslatedCountsTest(unittest.TestCase):
     def test_the_english_page_keeps_the_english_words(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = checkout(tmp)
-            readme = self.render(root)["README.md"]
+            readme = self.render(root)["CLEANYOURTV.md"]
         self.assertEqual((3, 2, 3), numbers(readme, ("TV models", "brands", "languages")))
         self.assertIn("| **3 languages** |", readme)
         self.assertNotIn("tv-modellen", readme)
@@ -308,10 +308,10 @@ class ThisRepositoryTest(unittest.TestCase):
         # script writes: README.de.md copied it by hand and was left out, and its grid said "Xiaomi · 32"
         # and "+49 more brands" over 97 brands. A translation that copies the block next is held here.
         pages, marker = [], "<!-- tv-brands:start"
-        for path in sorted(ROOT.glob("README*.md")):
+        for path in sorted([*ROOT.glob("CLEANYOURTV.md"), *ROOT.glob("README.*.md")]):
             if marker in path.read_text(encoding="utf-8"):
                 pages.append(path.name)
-        self.assertLessEqual({"README.md", "README.nl.md", "README.de.md"}, set(pages),
+        self.assertLessEqual({"CLEANYOURTV.md", "README.nl.md", "README.de.md"}, set(pages),
                              f"the brand block's marker was not found where this test expects it: {pages}")
         written = set(gen_tables.OWNED) | set(gen_tables.TRANSLATIONS)
         for page in pages:

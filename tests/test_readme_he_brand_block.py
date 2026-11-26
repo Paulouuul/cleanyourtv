@@ -28,7 +28,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATED = "README.md"
+GENERATED = "CLEANYOURTV.md"
 HAND = "README.he.md"
 # A grid cell: `[TCL](https://cleanyour.tv/tvs?q=TCL) · 83`.
 CELL = re.compile(r"\[([^\]]+)\]\(https://cleanyour\.tv/tvs\?q=[^)]*\) · (\d+)")

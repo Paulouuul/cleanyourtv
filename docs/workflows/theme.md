@@ -17,7 +17,7 @@
    neighbours' rows carry are read back by `tests/test_theme_row_claims.py`: a rotation ("a new one every
    20 minutes") against that theme's `wallpaper_rotation_minutes`, and a licence ("CC BY, not MIT")
    against its `CREDITS.md`, which the folder then has to ship.
-5. Bump the count in the Themes feature row of every front page that states it: today `README.md` ("`N ship
+5. Bump the count in the Themes feature row of every front page that states it: today `CLEANYOURTV.md` ("`N ship
    in themes/`"), `README.de.md`, `README.nl.md`, `README.uk.md`, `README.tr.md`, `README.pt-BR.md`,
    `README.he.md`, `README.uz.md`, `README.fr.md` and `README.es.md` (the last six in digits), each in its own words; the ten are
    today's pages rather than the rule.

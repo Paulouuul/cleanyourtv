@@ -25,9 +25,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.animation.DecelerateInterpolator;
-import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.util.TypedValue;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -124,7 +124,38 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** The same for either layout: the plain grid (dock_row false) uses the compact spacing. */
     static int itemHeightPx(int tileHeightPx, boolean dockRow, float density) {
+        if (dockRow && spacingScale(tileHeightPx, density) < 1f) {
+            int[] s = itemSpacingPx(tileHeightPx, density);
+            return tileHeightPx + 2 * s[0] + s[1] + s[2];
+        }
         return tileHeightPx + Math.round((dockRow ? ITEM_EXTRA_DP : COMPACT_ITEM_EXTRA_DP) * density);
+    }
+
+    /**
+     * apps_screen (MainActivity sets it): the room above and below a tile, the name under it and the dock's offsets
+     * shrink with the tile, so more pinned apps (smaller tiles) do not leave wide empty bands between the rows.
+     */
+    static boolean scaleSpacing;
+    /** One Piece skin: the tiles get a wooden frame, and opening an app plays its click. */
+    static boolean onePiece;
+
+    /** 1 at the design tile height or with scaleSpacing off; the tile's share of the design height below it. */
+    static float spacingScale(int tileHeightPx, float density) {
+        if (!scaleSpacing) return 1f;
+        return Math.max(0.5f, Math.min(1f, tileHeightPx / (DESIGN_H_DP * density)));
+    }
+
+    /** The item's padding (above and below), the gap over the name and the name's height, scaled (item_app.xml). */
+    static int[] itemSpacingPx(int tileHeightPx, float density) {
+        float s = spacingScale(tileHeightPx, density);
+        float n = Math.max(0.8f, s);   // the name stays readable: it shrinks less than the gaps
+        return new int[]{Math.round(8 * s * density), Math.round(7 * s * density), Math.round(22 * n * density)};
+    }
+
+    /** DockDecoration's offsets above and below the dock row, scaled like the item spacing. */
+    static int[] dockOffsetsPx(int tileHeightPx, float density) {
+        float s = spacingScale(tileHeightPx, density);
+        return new int[]{(int) (6 * s * density), (int) (12 * s * density)};
     }
 
     /**
@@ -340,9 +371,25 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             fresh.add(docked + i, new Entry(Entry.EMPTY, "", new ComponentName(ctx, "empty-dock-slot-" + i),
                     null, null, null, 0));
         }
+        // apps_screen: Home keeps the pinned row only; the Apps screen lists the rest. Replacing a pinned app needs
+        // every app to pick from, so the full list stays while that runs (setShowAll).
+        if (homeLimit > 0 && !showAll && fresh.size() > homeLimit) fresh = new ArrayList<>(fresh.subList(0, homeLimit));
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
+    }
+
+    /** apps_screen: how many tiles Home shows (the pinned row), 0 for all of them. Takes effect on the next reload. */
+    void setHomeLimit(int limit) {
+        homeLimit = limit;
+    }
+
+    private int homeLimit;
+    private boolean showAll;
+
+    /** apps_screen: true shows every app on Home for the next reloads (choosing an app for a pinned place). */
+    void setShowAll(boolean on) {
+        showAll = on;
     }
 
     /** icon_tiles: the app's icon centred on a dark banner-shaped tile, for apps whose own banner crops badly. */
@@ -430,6 +477,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             nameLp.height = Math.round(20 * density);
             int pad = Math.round(4 * density);
             v.setPadding(v.getPaddingLeft(), pad, v.getPaddingRight(), pad);
+        } else if (spacingScale(h, density) < 1f) {
+            // Smaller tiles, smaller gaps (scaleSpacing); itemHeightPx counts the same sizes.
+            int[] s = itemSpacingPx(h, density);
+            v.setPadding(v.getPaddingLeft(), s[0], v.getPaddingRight(), s[0]);
+            nameLp.topMargin = h + s[1];
+            nameLp.height = s[2];
+            ((TextView) name).setTextSize(TypedValue.COMPLEX_UNIT_SP, 14 * Math.max(0.8f, spacingScale(h, density)));
         }
         name.setLayoutParams(nameLp);
         // A sideways row would stretch a match_parent item across the whole screen: give it a grid column's width.
@@ -554,6 +608,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         try {
             ctx.startActivity(i);
+            if (onePiece) OnePieceSkin.clickOpen();
             if (cinematic) LastOpened.record(ctx, e.pkg);
             if (advancedEffects && !reducedMotion && ctx instanceof Activity) {
                 ((Activity) ctx).overridePendingTransition(R.anim.app_open_enter, R.anim.app_open_exit);
@@ -603,7 +658,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Reorder mode on or off; takes effect at the next reload() (empty dock slots are left out while on). */
     void setReordering(boolean on) {
         reordering = on;
+        carrying = on;
     }
+
+    /** Home is moving apps, so the sliding highlight (GlassView) marks the carried tile, not the tile's own mark. */
+    private static boolean carrying;
 
     boolean hasEmptySlots() {
         return emptySlots > 0;
@@ -941,6 +1000,20 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
             });
             card.setClipToOutline(true);
+            // The focused tile wears its own mark, as on the Apps screen and the Continue watching cards; no sliding
+            // highlight. One Piece skin: the carved wooden frame at rest, the twisted gold rope (with its pull-tight
+            // move) on focus. Otherwise: nothing at rest, a white ring on focus.
+            final Drawable rest = onePiece ? OnePieceSkin.woodFrame(density) : null;
+            final Drawable mark;
+            if (onePiece) {
+                mark = OnePieceSkin.rope(density, -1f);
+            } else {
+                GradientDrawable ring = new GradientDrawable();
+                ring.setColor(Color.TRANSPARENT);
+                ring.setStroke(Math.round(3 * density), Color.WHITE);
+                mark = ring;
+            }
+            card.setForeground(rest);
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
@@ -951,6 +1024,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
 
             card.setOnFocusChangeListener((view, focused) -> {
+                boolean marked = focused && !carrying;
+                if (mark instanceof GradientDrawable) {
+                    ((GradientDrawable) mark).setCornerRadius(cornerRadius(view.getWidth(), density));
+                }
+                view.setForeground(marked ? mark : rest);
+                if (marked && onePiece && animations && !reducedMotion) OnePieceFrames.Rope.playIfRope(mark);
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
@@ -983,9 +1062,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     view.animate().scaleX(s).scaleY(s)
                             .translationY(focused && advancedEffects && !inDock ? -4f * density : 0f)
                             .translationZ(focused && advancedEffects ? 8f * density : 0f)
-                            .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
-                            .setInterpolator(focused && !overshoot ? new DecelerateInterpolator(1.5f)
-                                    : new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
+                            .setDuration(150)   // the same zoom as the Apps screen and the Continue watching cards
                             .withLayer().start();
                     if (advancedEffects) {
                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)

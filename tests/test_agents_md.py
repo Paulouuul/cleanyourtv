@@ -175,7 +175,7 @@ class AgentsEntryPointsTest(unittest.TestCase):
                 self.assertIn("@AGENTS.md", [l.strip() for l in lines], f"{name} must import AGENTS.md")
 
     def test_people_docs_point_at_it(self):
-        for name in ("README.md", "CONTRIBUTING.md"):
+        for name in ("CLEANYOURTV.md", "CONTRIBUTING.md"):
             with self.subTest(file=name):
                 self.assertIn("](AGENTS.md)", (ROOT / name).read_text(encoding="utf-8"))
 

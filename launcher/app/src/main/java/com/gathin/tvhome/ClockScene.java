@@ -52,6 +52,8 @@ final class ClockScene {
     private boolean wallpaperShown;
     /** clock_wallpaper: the picture start() decodes, its darkening, and the resources to draw it with. */
     private File wallpaperFile;
+    /** The One Piece skin: its own picture (the Thousand Sunny under the sun), bundled in the app. */
+    private boolean skinPicture;
     private int wallpaperShade;
     private Resources wallpaperRes;
     /** One number per decode request: a result whose number is no longer the current one is dropped. Main thread only. */
@@ -97,7 +99,7 @@ final class ClockScene {
         handler.removeCallbacks(tick);
         handler.postDelayed(tick, MOVE_MS);
         clockRefresh.start();
-        if (wallpaperFile != null && !wallpaperShown) loadWallpaper();
+        if ((wallpaperFile != null || skinPicture) && !wallpaperShown) loadWallpaper();
     }
 
     void stop() {
@@ -119,6 +121,13 @@ final class ClockScene {
         try {
             cfg = Config.load(ctx);
         } catch (RuntimeException e) {
+            return;
+        }
+        if (OnePieceSkin.on(cfg)) {
+            // The skin's screensaver picture, darkened by clock_wallpaper_dim like a Home wallpaper would be.
+            skinPicture = true;
+            wallpaperShade = (cfg.clockWallpaperDim * 255 / 100) << 24;
+            wallpaperRes = ctx.getResources();
             return;
         }
         if (!cfg.clockWallpaper) {
@@ -161,7 +170,7 @@ final class ClockScene {
         int w = dm.widthPixels, h = dm.heightPixels;
         int generation = ++wallpaperGeneration;
         new Thread(() -> {
-            Bitmap bmp = decode(file, w, h);
+            Bitmap bmp = file != null ? decode(file, w, h) : decodeSkin(res);
             if (bmp == null) return;
             handler.post(() -> {
                 if (generation != wallpaperGeneration || wallpaperShown) {
@@ -176,6 +185,17 @@ final class ClockScene {
                         new BitmapDrawable(res, bmp), new ColorDrawable(shade)}));
             });
         }, "clock-wallpaper").start();
+    }
+
+    /** The One Piece skin's bundled screensaver picture, in RGB_565 like the wallpapers. */
+    private static Bitmap decodeSkin(Resources res) {
+        try {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.RGB_565;
+            return BitmapFactory.decodeResource(res, R.drawable.onepiece_screensaver, options);
+        } catch (Exception | OutOfMemoryError failure) {
+            return null;
+        }
     }
 
     /** WallpaperPlayer's decode: sampled and scaled down to cover the screen, never bigger than 4K. */

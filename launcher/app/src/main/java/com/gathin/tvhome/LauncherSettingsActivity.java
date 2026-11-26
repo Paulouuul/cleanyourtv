@@ -10,6 +10,7 @@ import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -39,7 +40,11 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView advancedChoice;
     private TextView followThemeChoice;
     private TextView openOnStartChoice;
+    private TextView skinChoice;
     private int columns;
+    /** apps_screen: apps per row on the Apps screen (AppsActivity.APPS_COLUMNS_KEY). */
+    private int appsColumns;
+    private final TextView[] appsColumnChoices = new TextView[4];
     private int rowsBelowDock;
     private int dockOpacity;
     private String clockFormat;
@@ -74,6 +79,31 @@ public final class LauncherSettingsActivity extends Activity {
                 columns = value;
                 choices.edit().putInt("columns", value).apply();
                 changed();
+                refresh();
+            });
+        }
+        appsColumns = choices.getInt(AppsActivity.APPS_COLUMNS_KEY, AppsActivity.DEFAULT_COLUMNS);
+        boolean appsScreen = getResources().getBoolean(R.bool.apps_screen);
+        findViewById(R.id.appsColumnsLabel).setVisibility(appsScreen ? View.VISIBLE : View.GONE);
+        findViewById(R.id.appsColumnsRow).setVisibility(appsScreen ? View.VISIBLE : View.GONE);
+        if (appsScreen) {
+            // Home holds only the pinned row: "Apps per row" sets how many apps are pinned, and the rows below it and
+            // its band's opacity have nothing to act on.
+            hideChoiceRow(R.id.rows0);
+            hideChoiceRow(R.id.dock100);
+            View columnsRow = (View) findViewById(R.id.columns4).getParent();
+            ViewGroup list = (ViewGroup) columnsRow.getParent();
+            View columnsLabel = list.getChildAt(list.indexOfChild(columnsRow) - 1);
+            if (columnsLabel instanceof TextView) ((TextView) columnsLabel).setText(R.string.pinned_count_label);
+        }
+        int[] appsIds = {R.id.appsColumns4, R.id.appsColumns5, R.id.appsColumns6, R.id.appsColumns7};
+        for (int i = 0; i < appsIds.length; i++) {
+            final int value = i + 4;
+            appsColumnChoices[i] = findViewById(appsIds[i]);
+            appsColumnChoices[i].setOnClickListener(v -> {
+                if (appsColumns == value) return;
+                appsColumns = value;
+                choices.edit().putInt(AppsActivity.APPS_COLUMNS_KEY, value).apply();
                 refresh();
             });
         }
@@ -139,12 +169,12 @@ public final class LauncherSettingsActivity extends Activity {
             if (advancedEffects) {
                 setAdvanced(false);
             } else {
-                new AlertDialog.Builder(this)
+                show(dialog()
                         .setTitle(R.string.advanced_effects)
                         .setMessage(R.string.advanced_effects_warning)
                         .setPositiveButton(R.string.enable, (dialog, which) -> setAdvanced(true))
                         .setNegativeButton(android.R.string.cancel, null)
-                        .show();
+                        .create());
             }
         });
         openOnStartChoice = findViewById(R.id.openOnStartChoice);
@@ -157,7 +187,8 @@ public final class LauncherSettingsActivity extends Activity {
             if (!hasOnTvChoices()) return;
             choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Config.DOCK_OPACITY_KEY).remove(Config.CLOCK_FORMAT_KEY).remove(OpenOnStart.KEY).commit();
+                    .remove(Config.DOCK_OPACITY_KEY).remove(Config.CLOCK_FORMAT_KEY).remove(OpenOnStart.KEY)
+                    .remove(Config.SKIN_OFF_KEY).commit();
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
@@ -168,6 +199,25 @@ public final class LauncherSettingsActivity extends Activity {
             changed();
             refresh();
         });
+        // A theme with a skin: switch it off here for the launcher's own look, and on again. Home rebuilds on return.
+        skinChoice = findViewById(R.id.skinChoice);
+        if (!config.themeSkin.isEmpty()) {
+            skinChoice.setVisibility(View.VISIBLE);
+            skinChoice.setOnClickListener(v -> {
+                boolean off = !choices.getBoolean(Config.SKIN_OFF_KEY, false);
+                if (off) choices.edit().putBoolean(Config.SKIN_OFF_KEY, true).commit();
+                else choices.edit().remove(Config.SKIN_OFF_KEY).commit();
+                changed();
+                recreate();   // this screen follows the skin too
+            });
+        }
+        onePiece = OnePieceSkin.on(config);
+        if (!onePiece) PlainText.keepWhite(findViewById(android.R.id.content));   // one text colour, white
+        if (onePiece) {
+            // The skin paints its own sea behind Home: a wallpaper choice would change nothing.
+            wallpaperChoice.setVisibility(View.GONE);
+            OnePieceSkin.styleSettings(this);
+        }
         findViewById(R.id.defaultHomeChoice).setOnClickListener(v ->
                 open(new Intent(this, HomeSettingsActivity.class)));
         findViewById(R.id.tvSettingsChoice).setOnClickListener(v ->
@@ -175,6 +225,29 @@ public final class LauncherSettingsActivity extends Activity {
         refresh();
         if (config.launcherSettingsButton) reorderChoice.requestFocus();
         else columnChoices[Math.max(0, Math.min(columns - 4, 3))].requestFocus();
+    }
+
+    private boolean onePiece;
+
+    /** A dialog for this screen: the system's own, or in the One Piece skin a light one on a parchment sheet. */
+    private AlertDialog.Builder dialog() {
+        return onePiece ? new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert)
+                : new AlertDialog.Builder(this);
+    }
+
+    private void show(AlertDialog dialog) {
+        if (onePiece && dialog.getWindow() != null) {
+            float d = getResources().getDisplayMetrics().density;
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.InsetDrawable(
+                    OnePieceSkin.sheet(d, 22 * d), 0));
+        }
+        dialog.show();
+        if (onePiece) OnePieceSkin.styleDialog(dialog);
+        if (dialog.getWindow() != null) {
+            // The screen behind darkens, so the question stands out.
+            dialog.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            dialog.getWindow().setDimAmount(0.6f);
+        }
     }
 
     private void reverseRow(TextView[] views) {
@@ -196,7 +269,7 @@ public final class LauncherSettingsActivity extends Activity {
         String current = choices.getString(Config.WALLPAPER_CHOICE_KEY, null);
         int checked = "none".equals(current) ? images.size()
                 : indexOf(images, current);
-        new AlertDialog.Builder(this)
+        show(dialog()
                 .setTitle(R.string.wallpaper_label)
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     dialog.dismiss();
@@ -216,7 +289,7 @@ public final class LauncherSettingsActivity extends Activity {
                     refresh();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                .create());
     }
 
     /** Off, then every app with a TV entry point by name. Saved at once; it is read on the next boot. */
@@ -240,7 +313,7 @@ public final class LauncherSettingsActivity extends Activity {
             labels[i + 1] = apps.get(i)[0];
             if (apps.get(i)[1].equals(current)) checked = i + 1;
         }
-        new AlertDialog.Builder(this)
+        show(dialog()
                 .setTitle(R.string.open_on_start_label)
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     dialog.dismiss();
@@ -252,7 +325,7 @@ public final class LauncherSettingsActivity extends Activity {
                     refresh();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                .create());
     }
 
     /** The picked app's name, its package when it is gone, or Off. */
@@ -292,9 +365,21 @@ public final class LauncherSettingsActivity extends Activity {
         refresh();
     }
 
+    /** Hides a row of choices (the row holding this view) and its label above it. */
+    private void hideChoiceRow(int choiceId) {
+        View row = (View) findViewById(choiceId).getParent();
+        ViewGroup list = (ViewGroup) row.getParent();
+        int at = list.indexOfChild(row);
+        row.setVisibility(View.GONE);
+        if (at > 0) list.getChildAt(at - 1).setVisibility(View.GONE);
+    }
+
     private void refresh() {
         for (int i = 0; i < columnChoices.length; i++) {
             columnChoices[i].setSelected(columns == i + 4);
+        }
+        for (int i = 0; i < appsColumnChoices.length; i++) {
+            appsColumnChoices[i].setSelected(appsColumns == i + 4);
         }
         for (int i = 0; i < rowChoices.length; i++) {
             rowChoices[i].setSelected(rowsBelowDock == i);
@@ -317,6 +402,8 @@ public final class LauncherSettingsActivity extends Activity {
                         : wallpaperCurrent != null ? wallpaperCurrent
                         : getString(R.string.wallpaper_theme_default)));
         openOnStartChoice.setText(getString(R.string.open_on_start_state, openOnStartLabel()));
+        skinChoice.setText(getString(R.string.skin_state, getString(
+                choices.getBoolean(Config.SKIN_OFF_KEY, false) ? R.string.off : R.string.on)));
         followThemeChoice.setSelected(!hasOnTvChoices());
     }
 
@@ -324,7 +411,8 @@ public final class LauncherSettingsActivity extends Activity {
         return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
                 || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)
-                || choices.contains(Config.CLOCK_FORMAT_KEY) || choices.contains(OpenOnStart.KEY);
+                || choices.contains(Config.CLOCK_FORMAT_KEY) || choices.contains(OpenOnStart.KEY)
+                || choices.contains(Config.SKIN_OFF_KEY);
     }
 
     private void open(Intent intent) {

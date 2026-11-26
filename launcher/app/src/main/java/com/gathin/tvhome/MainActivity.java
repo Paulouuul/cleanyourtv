@@ -52,12 +52,14 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.SoundEffectConstants;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.animation.AnimationUtils;
@@ -110,6 +112,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     static final String ACTION_VIEW_INPUTS = "com.android.tv.action.VIEW_INPUTS";
     /** Tiles per row and dock slots (res/values/config.xml, columns). Set in onCreate. */
     static int COLUMNS = 4;
+    /**
+     * Home is on screen, between onStart and onStop: a translucent panel over it (QuickSettingsActivity) leaves it
+     * started, any app in front stops it. QuickSettingsActivity lines up under the Settings pill only then.
+     */
+    static volatile boolean homeVisible;
+    /** Home is resumed (in front, taking keys), and when it last paused (SystemClock.uptimeMillis). */
+    private static volatile boolean homeResumed;
+    private static volatile long homePausedAt;
+
+    /**
+     * The quick panel is opening over Home itself: Home is in front, or paused just now to let the panel in. An app
+     * still loading leaves Home started (homeVisible) until its first frame, but Home paused when that app was opened.
+     */
+    /** When the remote's Home button was last pressed (HomeKeyService), SystemClock.uptimeMillis. */
+    private static volatile long homeKeyAt = -10_000L;
+
+    static void noteHomeKey() {
+        homeKeyAt = android.os.SystemClock.uptimeMillis();
+    }
+
+    /** Home is in front right now: the Settings key, pressed now, opens the quick panel over Home itself. */
+    static boolean homeInFront() {
+        return homeResumed;
+    }
+
+    static boolean panelOverHome() {
+        return homeVisible && (homeResumed || android.os.SystemClock.uptimeMillis() - homePausedAt < 1500L);
+    }
     private boolean rtlAppGrid;
     private static final long MINUTE_MS = 60_000L;
     private static final long STATS_MS = 10_000L;
@@ -197,6 +227,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean lunar;
     private int lunarOffset;
     private TextView stats;
+    /** config.xml continue_watching: the Watch Next row above the dock; null when off. */
+    private ContinueRow continueRow;
+    /** The theme asks for the One Piece look (OnePieceSkin). */
+    private boolean onePiece;
+    /** One Piece skin: Luffy's greeting in the header (Android 9 and up), and the network pill's Den Den Mushi. */
+    private LuffyGreeting luffy;
+    private OnePieceIcon denDen;
+    /** One Piece skin: the opening playing over Home after a power-on (OnePieceIntro), or null. */
+    private OnePieceIntro intro;
+    /** Home came back on screen (onStart): Luffy greets on the next resume. */
+    private boolean greetOnResume;
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
@@ -213,6 +254,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean inputsConnectedOnly;
     /** config.xml inputs_cec_state_only: only CEC device rows show a connection state, bare HDMI ports none. */
     private boolean inputsCecStateOnly;
+    /** The open Inputs list's rows, kept so a port plugged in or out updates its row live; null while closed. */
+    private LinearLayout openInputRows;
     private boolean shamsi;
     /** greeting_name: said after the greeting, which is shown in capitals. */
     private String greetingName = "";
@@ -399,6 +442,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void onInputRemoved(String inputId) {
             updateInputsButton();
         }
+
+        /** A device plugged into or out of a port: the open Inputs list shows it at once. */
+        @Override
+        public void onInputStateChanged(String inputId, int state) {
+            LinearLayout rows = openInputRows;
+            if (rows == null || openPopup == null || !openPopup.isShowing()) return;
+            for (int i = 0; i < rows.getChildCount(); i++) {
+                View row = rows.getChildAt(i);
+                if (inputId.equals(row.getTag(R.id.status))) showInputState(row, state);
+            }
+        }
     };
     /** Listens for any VPN coming up or going down, even one this app's traffic is excluded from. */
     private final ConnectivityManager.NetworkCallback vpnCallback = new ConnectivityManager.NetworkCallback() {
@@ -462,6 +516,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        onePiece = OnePieceSkin.on(cfg);
+        AppAdapter.onePiece = onePiece;
+        if (onePiece) OnePieceSkin.loadSounds(this);
         homeAppKeys = RemoteKeys.parseAppKeys(cfg.appKeys);
         clockFormat = cfg.clockFormat;
         ClockFormat.apply(getWindow().getDecorView(), clockFormat);
@@ -507,16 +564,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         coocaaSources = cfg.coocaaSources;
 
         root = findViewById(R.id.root);
-        root.setBackgroundColor(cfg.backgroundColor);
+        OnePieceSkin.backdrop(root, cfg);
         // root fills the window with an opaque colour (Config keeps background_color opaque), so the window's own
         // black under it is a second full-screen fill on every frame for nothing. The starting window still uses
         // the theme's background, so launch looks the same.
         getWindow().setBackgroundDrawable(null);
         wallpaperPlayer = new WallpaperPlayer(this, root, cfg);
+        if (!onePiece) PlainText.keepWhite(root);   // one text colour, white, with the skin off
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         glass.setStyle(cfg.glassStyle);
+        // The focused tile wears its own mark (AppAdapter); the sliding highlight only marks a carried app.
+        glass.setVisibility(View.GONE);
+        if (onePiece) glass.setRope(true);
         if (festive) glass.setAccent(festival.accentColor());
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
@@ -557,6 +618,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // The clock's own white for the date and the line before it, instead of their dimmed whites.
             ((TextView) findViewById(R.id.date)).setTextColor(Color.WHITE);
             findViewById(R.id.clockDivider).setBackgroundColor(Color.WHITE);
+        }
+        if (onePiece) {
+            OnePieceSkin.applyHome(this);
+            greetingColor = greeting.getCurrentTextColor();   // the greeting's colour is put back from this later
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                View leftBlock = findViewById(R.id.leftBlock);
+                luffy = new LuffyGreeting(this, (RelativeLayout) leftBlock.getParent(), leftBlock,
+                        findViewById(R.id.topButtons));
+            }
+            if (OnePieceIntro.dueAfterBoot(this)) {
+                // The opening, once per power-on, over everything on Home; Luffy greets when it is done.
+                intro = new OnePieceIntro(this, cfg.reducedMotion, () -> {
+                    intro = null;
+                    if (resumed && luffy != null) luffy.play();
+                });
+                intro.setTranslationZ(100f * density);
+                root.addView(intro, new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                intro.post(intro::start);
+            }
         }
         if (getResources().getBoolean(R.bool.rtl_menu_bar)) {
             // Center Hebrew greetings over the numeric time, independent of a visible AM/PM label. The clock's row
@@ -701,23 +782,33 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         fillDockLeavesSlots = !cfg.fillDock;
         Order savedOrder = Order.load(Order.file(this));
         adapter.setSavedOrder(Order.ranks(savedOrder, dockApps), Order.docked(savedOrder, dockApps));
+        appsScreen = getResources().getBoolean(R.bool.apps_screen) && dockRow && !singleRow;
+        if (appsScreen) adapter.setHomeLimit(COLUMNS);   // Home keeps the pinned row; the rest is on the Apps screen
+        AppAdapter.scaleSpacing = appsScreen;   // more pinned apps, smaller tiles: smaller gaps around them too
         grid.setAdapter(adapter);
+        setUpContinueRow();
 
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        int rowsBelowDock = cfg.rowsBelowDock;
+        // apps_screen: nothing sits below the pinned row on Home, whatever Launcher settings says.
+        int rowsBelowDock = appsScreen ? 0 : cfg.rowsBelowDock;
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
             int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
             int tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
-            int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(tileW), density);
-            int dockRow = itemH + (int) (AppAdapter.DOCK_EXTRA_DP * density);   // item height plus DockDecoration offsets
+            int tileH = AppAdapter.tileHeightPx(tileW);
+            int itemH = AppAdapter.itemHeightPx(tileH, density);
+            int[] dockOffsets = AppAdapter.dockOffsetsPx(tileH, density);
+            int dockRow = itemH + dockOffsets[0] + dockOffsets[1];   // item height plus DockDecoration offsets
             int gridRows = itemH * rowsBelowDock;
             // Keep the hero below the header when the library is enabled on a short screen,
             // even when the theme requests an extra visible row below the dock.
             int shelfClearance = cfg.appLibrary ? hero.getMeasuredHeight() + (int) (40 * density) : 0;
-            int want = Math.max(shelfClearance, h - dockRow - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
+            // The Continue watching row sits between the dock and the grid rows, so the dock parks higher by its height.
+            int want = Math.max(shelfClearance,
+                    h - dockRow - continueGap() - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
+            if (appsScreen && continueRow != null && continueRow.hasItems()) want = shareContinueRoom(h, inner, tileH, dockRow);
             // Where the rows cannot fit even at the smallest tile (3 rows with the title on), the title keeps its
             // room above the dock and the last rows run off the bottom instead of the title drawing over the clock.
             if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
@@ -745,6 +836,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     });
                     grid.requestLayout();
                 });
+                // The vertical grid too: the new padding (Continue watching's items arriving, or a new pinned count
+                // after Launcher settings) only moved the dock at the next layout, which came when Home was left
+                // and shown again; meanwhile the row was placed under the old dock line, off the bottom of the screen.
+                else grid.post(grid::requestLayout);
             }
             // Cold start or column count > 4: the first focus can run before the grid has its final width or
             // padding, leaving the glass at the XML design size until a key is pressed.
@@ -821,8 +916,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
-        btnInputs.setOnClickListener(v -> showInputs());
-        btnWifi.setOnClickListener(v -> openNetworkPill());
+        btnInputs.setOnClickListener(v -> {
+            if (onePiece) OnePieceSkin.clickInputs();
+            showInputs();
+        });
+        btnWifi.setOnClickListener(v -> {
+            if (onePiece) OnePieceSkin.clickNetwork();
+            openNetworkPill();
+        });
         btnVpn.setOnClickListener(v -> openVpnPill());
         btnWifi.setOnLongClickListener(v -> {
             open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
@@ -833,9 +934,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ((TextView) btnSettings).setText(R.string.launcher_settings);
             ((TextView) btnSettings).setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_home_settings_pill, 0, 0, 0);
         }
+        settingsPillMenu = getResources().getBoolean(R.bool.settings_pill_menu);
         btnSettings.setOnClickListener(v -> {
+            if (onePiece) OnePieceSkin.clickWheel();
             if (launcherSettingsButton) startActivityForResult(
                     new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST);
+            else if (settingsPillMenu) showSettingsMenu();
             else open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
@@ -850,6 +954,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
+        if (getResources().getBoolean(R.bool.apps_screen)) {
+            // apps_screen: the round apps button opens the Apps screen, the grid of every app.
+            btnLibraryTop.setVisibility(View.VISIBLE);
+            btnLibraryTop.setContentDescription(getString(R.string.apps_screen));
+            btnLibraryTop.setOnClickListener(v -> {
+                if (onePiece) OnePieceSkin.clickApps();
+                startActivity(new Intent(this, AppsActivity.class));
+            });
+        }
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
@@ -931,6 +1044,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+        else if (onePiece) applyOnePieceIcons((TextView) btnSettings);
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
@@ -1068,6 +1182,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Still on screen (the quick panel was over it, or Home was already in front): the tiles are current,
             // so only go back to the first one; rebuilding would replay the entrance animation for nothing.
             grid.post(() -> focusTile(0));
+            // Home pressed on Home: Luffy says his line again. Not when Home is only now coming back (from HDMI or an
+            // app, onStart runs before this and has already cleared "stopped"): onResume greets then, and both played.
+            // Only for the remote's Home button: other apps send Home too (Google Home's panel), and Luffy spoke then.
+            boolean homeKey = android.os.SystemClock.uptimeMillis() - homeKeyAt < 2000L;
+            if (luffy != null && homeKey && !greetOnResume && intro == null) luffy.play();
         }
     }
 
@@ -1076,6 +1195,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onStart();
         stopped = false;
         started = true;
+        homeVisible = true;
+        greetOnResume = true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(timeReceiver, timeFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -1089,6 +1210,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        homeResumed = true;
+        // One Piece skin: the clock's and the titles' gleam crosses them as Home comes into view.
+        if (onePiece && !reducedMotion) root.postDelayed(() -> OnePieceText.playIn(root), 450);
         resumed = true;
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
@@ -1104,6 +1228,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         restartIdleClock();
         promptsPaused = false;
+        loadContinueRow();
         if (grid.getAdapter() == null) grid.setAdapter(adapter);   // dropped by onTrimMemory
         switch (tileRefresh.onResume(packagesChangedSinceRebuild())) {
             case REBUILD:
@@ -1148,6 +1273,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 handler.postDelayed(this::playPetalShower, 450);
             }
         }
+        if (intro != null) greetOnResume = false;   // the opening's end greets instead
+        if (luffy != null && greetOnResume) {
+            // Back on Home from anywhere (the TV's start, an app, an input, the Apps screen, settings): Luffy greets
+            // once Home has settled. The quick panel over Home never stopped it, so closing it does not.
+            greetOnResume = false;
+            handler.postDelayed(() -> { if (resumed && luffy != null) luffy.play(); }, 900);
+        } else if (luffy != null && intro == null) {
+            // Back in front with no greeting due (a panel over Home closed): Luffy's idle loop carries on.
+            luffy.resumeIdle();
+        }
     }
 
     /** Launcher settings' change count (Config.SETTINGS_REVISION_KEY); onResume rebuilds Home when it moved. */
@@ -1162,6 +1297,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_APP_REQUEST) {
+            String slotKey = replaceSlotKey;
+            replaceSlotKey = null;
+            String chosen = resultCode == RESULT_OK && data != null ? data.getStringExtra(AppsActivity.EXTRA_COMPONENT) : null;
+            // After onResume has rebuilt the tiles.
+            if (slotKey != null && chosen != null) grid.post(() -> replacePinned(slotKey, chosen));
+            return;
+        }
         if (requestCode == LAUNCHER_SETTINGS_REQUEST && resultCode == RESULT_OK
                 && data != null && data.getBooleanExtra(LauncherSettingsActivity.EXTRA_REORDER, false)) {
             getIntent().putExtra(LauncherSettingsActivity.EXTRA_REORDER, true);
@@ -1305,6 +1448,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        homeResumed = false;
+        homePausedAt = android.os.SystemClock.uptimeMillis();
         resumed = false;
         // No UP reaches a paused Home, so a vendor-key hold it saw go down would still open its app later.
         // Only Home's own share is dropped: a key service that saw the same DOWN keeps its hold.
@@ -1324,6 +1469,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (gameDay != null) gameDay.stop();
         handler.removeCallbacks(turnTick);
         if (lamp != null) lamp.stop();
+        if (luffy != null) luffy.stop();
         cancelPendingFocusScroll();
         // Nothing of ours stays on screen over another app; an undecided prompt simply returns next time.
         if (cardPrompt != null) cardPrompt.dismiss();
@@ -1335,6 +1481,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onStop() {
         super.onStop();
         started = false;
+        homeVisible = false;
         unregisterReceiver(timeReceiver);
         clockRefresh.stop();
         handler.removeCallbacks(clockCheck);
@@ -1379,6 +1526,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (luffy != null) luffy.release();
         RemoteKeys.release(this);
         cancelHoldOk();
         if (gameDay != null) gameDay.shutdown();
@@ -1404,7 +1552,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         for (int code : settingsKeycodes) {
             if (event.getKeyCode() != code) continue;
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
-                Intent settings = settingsKeyPanel ? new Intent(this, QuickSettingsActivity.class)
+                Intent settings = settingsKeyPanel
+                        ? new Intent(this, QuickSettingsActivity.class).putExtra(QuickSettingsActivity.EXTRA_OVER_HOME, resumed)
                         : systemIntent(Settings.ACTION_SETTINGS);
                 // settings_key_clear_task, as in HomeKeyService: Back from Settings goes Home, not to a vendor page.
                 if (settingsKeyClearTask && !settingsKeyPanel) settings.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -1429,6 +1578,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (intro != null && intro.playing()) {
+            // Any key skips the One Piece opening; it does nothing else until the opening is gone.
+            if (event.getAction() == KeyEvent.ACTION_DOWN) intro.skip();
+            return true;
+        }
         if (homeIgnoreChannelKeys && RemoteKeys.isChannelKey(event.getKeyCode())) return true;
         // Vendor keys (TCL Netflix button, 4062) never reach the key services, only the focused window, so their
         // "hold:" entries run here too or nowhere. Only while resumed: onPause releases Home's holds, and a DOWN
@@ -1465,7 +1619,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     return true;
                 default:
                     if (ok || back) {
-                        if (!down) drop();
+                        // apps_screen: moving a pinned app is one step; putting it down ends the mode and saves.
+                        if (!down) {
+                            if (appsScreen) endReorder();
+                            else drop();
+                        }
                         return true;
                     }
                     return super.dispatchKeyEvent(event);
@@ -1514,16 +1672,29 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The start shared by reorder and edit-dock mode. False when there is nothing to move. */
     private boolean beginReorder() {
-        if (adapter.movableCount() < 2) return false;
+        return beginReorder(false);
+    }
+
+    /**
+     * showAll (apps_screen): Home brings back every app for the session, to choose one for a pinned place. Moving a
+     * pinned app keeps Home to the pinned row: it only changes places there.
+     */
+    private boolean beginReorder(boolean showAll) {
+        if (adapter.movableCount() < 2 && !showAll) return false;
         // Before the reload below: once it has dropped the empty slots, the dock row also shows grid apps.
         dockInSession = new HashSet<>();
         dockedAtStart = adapter.dockFilled();
         for (int i = 0; i < Math.min(dockedAtStart, adapter.movableCount()); i++) dockInSession.add(adapter.keyAt(i));
         adapter.setReordering(true);
-        if (adapter.hasEmptySlots()) reloadTiles();   // every position must hold a tile that can move
+        // every position must hold a tile that can move; apps_screen: bring back the apps Home leaves off
+        showingAll = appsScreen && showAll;
+        adapter.setShowAll(showingAll);
+        if (adapter.hasEmptySlots() || showingAll) reloadTiles();
         reordering = true;
         orderAtStart = adapter.movableKeys();
         glass.setAccent(REORDER_ACCENT);
+        glass.setVisibility(View.VISIBLE);
+        refocusTileSkin();   // the focused tile drops its own mark for the sliding one
         btnReorder.setActivated(true);
         return true;
     }
@@ -1531,7 +1702,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Edit dock (Settings menu): focus goes to the first dock place, which OK then chooses. */
     private void startDockEdit() {
         if (reordering) endReorder();
-        if (!beginReorder()) return;
+        if (!beginReorder(true)) return;
         dockEditing = true;
         dockEditSlot = -1;
         focusTile(0);
@@ -1596,7 +1767,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     private void startDockEditFor(String key, boolean inDock) {
         if (reordering) endReorder();
-        if (!beginReorder()) return;
+        if (!beginReorder(true)) return;
         dockEditing = true;
         int pos = adapter.positionOf(key);   // beginReorder can rebuild the tiles
         int n = adapter.movableCount();
@@ -1606,12 +1777,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             dockEditSlot = pos;
             dimOthers();
             focusTile(Math.min(COLUMNS, n - 1));
-            Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
+            // apps_screen: the "Choose an app" title over the grid says it.
+            if (!appsScreen) Toast.makeText(this, R.string.dock_edit_pick_app, Toast.LENGTH_LONG).show();
         } else {
             dockEditAppKey = key;
             focusTile(0);
             Toast.makeText(this, R.string.dock_edit_pick_place, Toast.LENGTH_LONG).show();
         }
+    }
+
+    private static final int PICK_APP_REQUEST = 7;
+    /** apps_screen: the pinned tile whose place the Apps screen is choosing an app for. */
+    private String replaceSlotKey;
+
+    /** apps_screen: puts the chosen app in the pinned place slotKey holds, as Edit pinned would, and saves. */
+    private void replacePinned(String slotKey, String chosenKey) {
+        if (reordering) endReorder();
+        if (slotKey.equals(chosenKey) || !beginReorder(true)) return;
+        dockEditing = true;
+        int slot = adapter.positionOf(slotKey);
+        int pos = adapter.positionOf(chosenKey);
+        if (slot < 0 || slot >= COLUMNS || pos < 0) {
+            endReorder();
+            return;
+        }
+        swapIntoDock(slot, pos);
     }
 
     /** Puts the app at pos into dock place slot, and the app that was there where the chosen one was; then saves. */
@@ -1653,6 +1843,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** A tile's alpha: the carried tile stays bright; every other tile is dim while reordering, including after a
      * drop, until Back ends the mode. In edit-dock mode, dock tiles other than the chosen place are dimmed. */
     private float tileAlpha(int pos) {
+        // apps_screen: nothing dims while moving a pinned app or choosing one; only the pinned places other than the
+        // one being replaced step back.
+        if (appsScreen) return dockEditSlot >= 0 && pos >= 0 && pos < COLUMNS && pos != dockEditSlot ? 0.45f : 1f;
         if (movingKey != null) {
             return pos != RecyclerView.NO_POSITION && movingKey.equals(adapter.keyAt(pos)) ? 1f : 0.45f;
         }
@@ -1672,6 +1865,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dimOthers();   // drop() ran while reordering was still on; restore full brightness now the mode is off
         adapter.setReordering(false);
         glass.setAccent(festive ? festival.accentColor() : 0);
+        glass.setVisibility(View.GONE);
+        refocusTileSkin();   // and takes its own mark back
         btnReorder.setActivated(false);
         List<String> keys = adapter.movableKeys();
         List<String> before = orderAtStart;
@@ -1692,7 +1887,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 Toast.makeText(this, R.string.reorder_not_saved, Toast.LENGTH_SHORT).show();
             }
         }
-        if (fillDockLeavesSlots) reloadTiles();   // the empty dock slots left out while reordering come back
+        // the empty dock slots left out while reordering come back; apps_screen: Home goes back to the pinned row
+        boolean wasAll = showingAll;
+        showingAll = false;
+        adapter.setShowAll(false);
+        if (fillDockLeavesSlots || wasAll) reloadTiles();
     }
 
     /**
@@ -2252,6 +2451,204 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else glass.setAlpha(0f);
     }
 
+    // ---- Continue watching (config.xml continue_watching) ------------------------------------------
+
+    /** Off unless configured, and only with a dock row that has the room above it (not single_row). */
+    private void setUpContinueRow() {
+        if (!getResources().getBoolean(R.bool.continue_watching) || !dockRow || singleRow) return;
+        continueRow = new ContinueRow(this, new ContinueRow.Host() {
+            @Override public void onRowFocused() {
+                hideGlass();
+                hideHero();
+            }
+
+            // The row sits between the dock and the second grid row: Up goes back to the dock, Down on to the grid.
+            @Override public void onRowUp() {
+                focusTile(lastFocused < COLUMNS ? lastFocused : 0);
+            }
+
+            @Override public void onRowDown() {
+                int count = adapter.getItemCount();
+                if (count > COLUMNS) focusTile(COLUMNS + Math.min(lastFocused % COLUMNS, count - COLUMNS - 1));
+                // Nothing below the row (apps_screen): Down stays on it.
+            }
+
+            @Override public boolean inTopBar(View view) {
+                ViewGroup bar = findViewById(R.id.topButtons);
+                for (ViewParent p = view.getParent(); p != null; p = p.getParent()) if (p == bar) return true;
+                return false;
+            }
+
+            @Override public void onRowOpen(ContinueWatching.Item item) {
+                Intent i = ContinueWatching.intentFor(MainActivity.this, item);
+                if (i == null) return;
+                if (onePiece) OnePieceSkin.clickOpen();
+                try {
+                    startActivity(i);
+                } catch (RuntimeException e) {
+                    // ActivityNotFound, or a SecurityException for an intent the app did not export.
+                    Log.w(ContinueWatching.TAG, "could not open " + item.pkg + ": " + e);
+                    Intent fallback = getPackageManager().getLeanbackLaunchIntentForPackage(item.pkg);
+                    if (fallback != null) startActivity(fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                }
+            }
+        }, getString(R.string.continue_watching));
+        if (onePiece) continueRow.outlineCaption();
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMarginStart((int) (56 * density));
+        root.addView(continueRow, root.indexOfChild(glass), lp);
+        // Between the dock and the second grid row: the second row is pushed down by the row's height, and the row
+        // follows the grid as it scrolls. It hides once it would slide up under the clock block.
+        continueRow.setWanted(true);
+        grid.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent,
+                                       @NonNull RecyclerView.State state) {
+                int pos = parent.getChildAdapterPosition(view);
+                if (pos >= COLUMNS && pos < 2 * COLUMNS) outRect.top += continueGap();
+            }
+        });
+        grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                placeContinueRow();
+            }
+        });
+        grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> placeContinueRow());
+        root.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> placeContinueRow());
+    }
+
+    /** The room the Continue watching row takes between the dock and the second grid row; 0 while it is empty. */
+    private int continueGap() {
+        if (continueRow == null || !continueRow.hasItems()) return 0;
+        if (continueRowHeight == 0) {
+            // Unspecified both ways: the height does not depend on the width, and root may not be laid out yet.
+            continueRow.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            continueRowHeight = continueRow.getMeasuredHeight();
+        }
+        return continueRowHeight;
+    }
+
+    private int continueRowHeight;
+
+    /**
+     * The pinned count whose layout sets Home's margins for every count: the most Launcher settings offers, so the
+     * smallest tiles and the tightest spacing (LauncherSettingsActivity, Apps pinned 4 to 7).
+     */
+    private static final int REFERENCE_COLUMNS = 7;
+    /** The fewest Continue watching cards a row shows across its width, however much height it has. */
+    private static final float CONTINUE_CARDS_ACROSS = 3f;
+
+    /**
+     * apps_screen with Continue watching: the space above the pinned row and under Continue watching is the same for
+     * every pinned count, the one REFERENCE_COLUMNS gives, worked out from that count's tile size (the gaps shrink
+     * with the tiles, AppAdapter.spacingScale). Continue watching takes all the height left between them: its cards
+     * and text grow with fewer, smaller pinned apps and shrink with fewer, bigger ones.
+     * Returns the grid's top padding: where the pinned row starts.
+     */
+    private int shareContinueRoom(int h, int innerW, int tileH, int dockRowH) {
+        int bottom = (int) (AppAdapter.BOTTOM_ROOM_DP * density);
+        // The design layout: a full-size tile and Continue watching at its own size, with the rest above the row.
+        int designH = Math.round(AppAdapter.DESIGN_H_DP * density);
+        int[] o = AppAdapter.dockOffsetsPx(designH, density);
+        int dock0 = AppAdapter.itemHeightPx(designH, density) + o[0] + o[1];
+        int cont0 = Math.round(continueGap() / continueRow.scale());
+        // The space above, scaled like the gaps of the reference count's tiles.
+        int refTileH = AppAdapter.tileHeightPx(AppAdapter.tileWidthPx(innerW, REFERENCE_COLUMNS, density));
+        int top = Math.round((h - dock0 - cont0 - bottom) * AppAdapter.spacingScale(refTileH, density));
+        // The tile itself starts below the item's padding and the dock's offset, which grow with the tile: move the
+        // row up by the difference, so the visible top of the tiles is where the reference count's are.
+        int[] refPad = AppAdapter.itemSpacingPx(refTileH, density), refOff = AppAdapter.dockOffsetsPx(refTileH, density);
+        int[] pad = AppAdapter.itemSpacingPx(tileH, density), off = AppAdapter.dockOffsetsPx(tileH, density);
+        top = Math.max(0, top + refPad[0] + refOff[0] - pad[0] - off[0]);
+        float scale = Math.max(0.5f, (h - top - dockRowH - bottom) / (float) cont0);
+        // No bigger than CONTINUE_CARDS_ACROSS cards across the row's width: in a narrow row the height alone could
+        // make two cards fill it. The height the cap leaves goes above the pinned row instead.
+        int rowW = root.getWidth() - (int) (56 * density);
+        float byWidth = rowW / (CONTINUE_CARDS_ACROSS * (ContinueRow.CARD_W_DP + 18) * density);
+        boolean capped = rowW > 0 && byWidth < scale;
+        if (capped) scale = Math.max(0.5f, byWidth);
+        if (Math.abs(scale - continueRow.scale()) >= 0.01f) {
+            continueRow.setScale(scale);
+            continueRowHeight = 0;   // measured again at the new size
+        }
+        return capped ? Math.max(0, h - dockRowH - continueGap() - bottom) : top;
+    }
+
+    /** Puts the row in the gap under the dock, wherever the grid has scrolled to. */
+    private void placeContinueRow() {
+        if (continueRow == null) return;
+        GridLayoutManager lm = (GridLayoutManager) grid.getLayoutManager();
+        Rect g = new Rect(0, 0, grid.getWidth(), grid.getHeight());
+        root.offsetDescendantRectToMyCoords(grid, g);
+        View second = lm.findViewByPosition(COLUMNS);
+        View dock = lm.findViewByPosition(0);
+        float y;
+        if (second != null) y = g.top + lm.getDecoratedTop(second);
+        else if (dock != null) y = g.top + lm.getDecoratedBottom(dock);
+        else {
+            continueRow.setFits(false);
+            return;
+        }
+        // A layout margin, not setY: the focus finder works from layout positions, so a row moved by translation
+        // alone was found at the top of the screen, beside the header buttons, and took their Right and Up.
+        FrameLayout.LayoutParams rowLp = (FrameLayout.LayoutParams) continueRow.getLayoutParams();
+        int top = Math.round(y);
+        // Its own height, not wrap_content: placed first under a dock line near the bottom (a new pinned count, the
+        // items arriving), a wrap_content row was measured into the few pixels left there and kept that height once
+        // moved up, its cards cut off under the title until Home was left and shown again.
+        int height = continueGap();
+        if (rowLp.topMargin != top || (height > 0 && rowLp.height != height)) {
+            rowLp.topMargin = top;
+            if (height > 0) rowLp.height = height;
+            continueRow.setLayoutParams(rowLp);
+            // Called from layout listeners, where the layout request is dropped: lay the row out on the next frame.
+            root.post(continueRow::requestLayout);
+        }
+        View anchor = stats.getVisibility() == View.VISIBLE ? stats : findViewById(R.id.leftBlock);
+        Rect a = new Rect(0, 0, anchor.getWidth(), anchor.getHeight());
+        root.offsetDescendantRectToMyCoords(anchor, a);
+        continueRow.setFits(y >= a.bottom);
+    }
+
+    /** Up from the second grid row: scroll the row back on screen first, then focus it. */
+    private boolean focusContinueRowFromGrid() {
+        if (continueRow == null || !continueRow.hasItems()) return false;
+        // Back to the resting layout, the dock parked on its line with the row and the second grid row under it,
+        // as when the dock has focus: scrolling only far enough for the row left the dock cut under the header.
+        ((GridLayoutManager) grid.getLayoutManager()).scrollToPositionWithOffset(0, 0);
+        grid.post(() -> {
+            placeContinueRow();
+            if (continueRow.isShowing()) continueRow.focusCard();
+            else focusTile(lastFocused < COLUMNS ? lastFocused : 0);
+        });
+        return true;
+    }
+
+    /** Once per resume, off the main thread: a provider query and a few local posters. No polling. */
+    private void loadContinueRow() {
+        if (continueRow == null) return;
+        Context app = getApplicationContext();
+        new Thread(() -> {
+            List<ContinueWatching.Item> items = ContinueWatching.load(app);
+            handler.post(() -> {
+                if (continueRow == null || isFinishing() || isDestroyed()) return;
+                continueRow.setItems(items);
+                grid.invalidateItemDecorations();
+                grid.post(this::placeContinueRow);
+            });
+            // Then the posters, each swapped in as it arrives: the row does not wait for the slowest one.
+            for (ContinueWatching.Item item : items) {
+                if (isFinishing() || isDestroyed()) return;
+                if (ContinueWatching.loadPoster(app, item)) handler.post(() -> {
+                    if (continueRow != null) continueRow.showPoster(item);
+                });
+            }
+        }, "continue-watching").start();
+    }
+
+
     // ---- optional system stats (config.xml show_stats) --------------------------------------------
 
     /** Background reader. Started only while Home is resumed and show_stats is on. */
@@ -2463,9 +2860,32 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     rtlAppGrid, keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-            if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
+            if (position < COLUMNS) {                      // dock row: the top bar
+                if (continueRow == null) return false;
+                // The row is placed with setY, which the focus finder ignores: it would find the row's cards at their
+                // layout position, the top of the screen, and take Up into the row. Search without it.
+                View current = grid.findFocus();
+                continueRow.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+                View next = current != null ? current.focusSearch(View.FOCUS_UP) : null;
+                continueRow.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+                if (next != null && next.requestFocus()) {
+                    grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+                    return true;
+                }
+                return false;
+            }
+            // Second row: the Continue watching row sits between it and the dock.
+            if (position < 2 * COLUMNS && !showingAll && focusContinueRowFromGrid()) {
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+                return true;
+            }
             target = position - COLUMNS;
         } else {
+            if (position < COLUMNS && continueRow != null && continueRow.isShowing()) {
+                continueRow.focusCard();
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
+                return true;
+            }
             int lastRowStart = ((count - 1) / COLUMNS) * COLUMNS;
             if (position >= lastRowStart) {
                 if (adapter.isLibraryAt(count)) focusLibrary();
@@ -3013,7 +3433,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             btnWifi.setContentDescription(btnWifi.getText());
             btnWifi.setText(null);
         }
-        if (festive && lamp != null) {
+        if (denDen != null) {
+            denDen.setAwake(online);
+        } else if (festive && lamp != null) {
             if (online && flame == 0) flame = 3;   // online some other way (cellular, USB tethering)
             lamp.setSteady(steady);
             lamp.setFlame(flame);
@@ -3038,6 +3460,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** show_inputs_pill as configured: top_menu clears showInputsPill, so its Inputs row reads this. */
     private boolean showInputsMenuRow = true;
     private boolean launcherSettingsButton;
+    /** config.xml settings_pill_menu: the Settings pill's click opens its menu (TV settings, Launcher settings, ...). */
+    private boolean settingsPillMenu;
+    /** config.xml apps_screen: Home shows only the pinned row (and Continue watching); the Apps screen has the rest. */
+    private boolean appsScreen;
+    /** apps_screen: every app is on Home for a moment, while a Replace from the Apps screen finds the chosen app. */
+    private boolean showingAll;
     /** icon_only_buttons without wifi_label_width: the Wi-Fi pill shows no network name. */
     private boolean wifiIconOnly;
     /** config.xml wifi_status_color: the Wi-Fi icon's green while online and its usual pill colours; null while off. */
@@ -3098,6 +3526,37 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         setFestiveIcon(settings, marigold);
         addFocusAction(inputs, bell::ring);
         addFocusAction(settings, marigold::turn);
+    }
+
+    /** One Piece skin: runs the focused tile's focus handling again, so its frame follows the carrying state. */
+    private void refocusTileSkin() {
+        View f = getCurrentFocus();
+        if (f == null || f.getOnFocusChangeListener() == null || grid.findContainingItemView(f) == null) return;
+        f.getOnFocusChangeListener().onFocusChange(f, true);
+    }
+
+    /** One Piece skin: a Log Pose for Inputs, a Den Den Mushi for the network, a chest for Apps, a wheel for Settings. */
+    private void applyOnePieceIcons(TextView settings) {
+        OnePieceIcon pose = new OnePieceIcon(density, OnePieceIcon.LOG_POSE);
+        denDen = new OnePieceIcon(density, OnePieceIcon.DEN_DEN);
+        OnePieceIcon chest = new OnePieceIcon(density, OnePieceIcon.CHEST);
+        OnePieceIcon wheel = new OnePieceIcon(density, OnePieceIcon.WHEEL);
+        TextView[] pills = {(TextView) btnInputs, btnWifi, (TextView) btnLibraryTop, settings};
+        OnePieceIcon[] icons = {pose, denDen, chest, wheel};
+        int[] kinds = {OnePieceIcon.LOG_POSE, OnePieceIcon.DEN_DEN, OnePieceIcon.CHEST, OnePieceIcon.WHEEL};
+        for (int i = 0; i < pills.length; i++) {
+            OnePieceIcon icon = icons[i];
+            int kind = kinds[i];
+            icon.setReducedMotion(reducedMotion);
+            if (pills[i].getBackground() instanceof OnePiecePill) {
+                ((OnePiecePill) pills[i].getBackground()).setReducedMotion(reducedMotion);
+            }
+            setFestiveIcon(pills[i], icon);
+            addFocusAction(pills[i], () -> {
+                icon.nudge();
+                OnePieceSkin.focus(kind);
+            });
+        }
     }
 
     private static void setFestiveIcon(TextView pill, Drawable icon) {
@@ -3520,6 +3979,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                         final String deviceId = device.getId();
                         int state = hdmiStateBogus && !inputsCecStateOnly ? -1 : tim.getInputState(deviceId);
                         View row = addInputRow(rows, popup, R.drawable.ic_input, deviceLabel, state, () -> openInput(deviceId));
+                        if (state != -1) row.setTag(R.id.status, deviceId);   // follows plugging in and out
                         if (connectedOnly && InputFold.folds(true, state)) fold(row, folded);
                     }
                     continue;
@@ -3532,12 +3992,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 int state = !hdmi || hdmiStateBogus ? -1 : tim.getInputState(id);
                 View row = addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
                         () -> openInput(id));
+                if (state != -1) row.setTag(R.id.status, id);   // follows plugging in and out
                 if (connectedOnly && InputFold.folds(hdmi, state)) fold(row, folded);
             }
         }
         if (!folded.isEmpty()) {
             View more = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-            ((ImageView) more.findViewById(R.id.icon)).setImageResource(R.drawable.ic_input);
+            OnePieceSkin.rowIcon(more.findViewById(R.id.icon), R.drawable.ic_input);
             ((TextView) more.findViewById(R.id.title)).setText(R.string.more_inputs);
             more.findViewById(R.id.status).setVisibility(View.GONE);
             more.findViewById(R.id.dot).setVisibility(View.GONE);
@@ -3606,6 +4067,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setWidth(Math.max(width, Math.min(panel.getMeasuredWidth(), (int) (360 * density))));
 
         int alignment = getResources().getBoolean(R.bool.rtl_menu_bar) != underGear ? Gravity.END : Gravity.START;
+        openInputRows = rows;
         dropIn(popup, panel, anchor, alignment);
         for (int i = 0; i < rows.getChildCount(); i++) {
             View child = rows.getChildAt(i);
@@ -3633,6 +4095,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Drop in: fade and unfold from the top edge, hanging under the anchor pill. */
     private void dropIn(PopupWindow popup, View panel, View anchor, int gravity) {
+        if (!onePiece) PlainText.keepWhite(panel);
+        if (onePiece) {
+            OnePieceSkin.parchment(panel);
+            // The skin's drawn row icons are larger than the plain ones: widen the menu to keep the labels whole.
+            panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+            int wide = Math.min(panel.getMeasuredWidth(), getResources().getDisplayMetrics().widthPixels / 2);
+            if (popup.getWidth() > 0 && wide > popup.getWidth()) popup.setWidth(wide);
+        }
         panel.setAlpha(0f);
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);
@@ -3654,28 +4124,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private View addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
+        OnePieceSkin.rowIcon(row.findViewById(R.id.icon), iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
-        TextView status = row.findViewById(R.id.status);
-        View dot = row.findViewById(R.id.dot);
-        // This TV reports "standby" for every port whether or not something is plugged in, so only
-        // definite states are shown.
-        if (state == TvInputManager.INPUT_STATE_CONNECTED) {
-            status.setText(R.string.connected);
-            dot.setVisibility(View.VISIBLE);
-        } else if (state == TvInputManager.INPUT_STATE_DISCONNECTED) {
-            status.setText(R.string.not_connected);
-            dot.setVisibility(View.GONE);
-        } else {
-            status.setVisibility(View.GONE);
-            dot.setVisibility(View.GONE);
-        }
+        showInputState(row, state);
         row.setOnClickListener(v -> {
             popup.dismiss();
             action.run();
         });
         rows.addView(row);
         return row;
+    }
+
+    /**
+     * A row's Connected / Not connected. Some TVs report "standby" for every port whether or not something is
+     * plugged in, so only definite states are shown.
+     */
+    private static void showInputState(View row, int state) {
+        TextView status = row.findViewById(R.id.status);
+        boolean on = state == TvInputManager.INPUT_STATE_CONNECTED;
+        boolean off = state == TvInputManager.INPUT_STATE_DISCONNECTED;
+        if (on || off) status.setText(on ? R.string.connected : R.string.not_connected);
+        status.setVisibility(on || off ? View.VISIBLE : View.GONE);
+        row.findViewById(R.id.dot).setVisibility(on ? View.VISIBLE : View.GONE);
     }
 
     // ---- launcher settings and module cards -------------------------------------------------------
@@ -3715,22 +4185,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         PopupWindow popup = glassPopup(panel, (int) (200 * density));
-        if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, () -> startActivityForResult(
+        // settings_pill_menu: a click opens this menu, so the TV's own Settings comes first.
+        if (settingsPillMenu && !launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.tv_settings, R.drawable.ic_settings,
+                () -> open(systemIntent(Settings.ACTION_SETTINGS)));
+        if (!launcherSettingsButton) addSettingsMenuRow(rows, popup, R.string.launcher_settings, R.drawable.ic_home_settings, () -> startActivityForResult(
                 new Intent(this, LauncherSettingsActivity.class), LAUNCHER_SETTINGS_REQUEST));
         // Firmware that ships its own settings app next to the AOSP one (Xiaomi China is one): the
         // vendor app holds pages the AOSP settings has no row for, such as Account & Security with
         // the ADB switch. Offered here only while one of them is installed.
         if (SystemSettings.vendorIntent(this) != null) {
-            addSettingsMenuRow(rows, popup, R.string.native_settings, () -> {
+            addSettingsMenuRow(rows, popup, R.string.native_settings, R.drawable.ic_settings, () -> {
                 Intent vendor = SystemSettings.vendorIntent(this);
                 if (vendor != null) open(vendor);
             });
         }
-        if (moduleCards) addSettingsMenuRow(rows, popup, R.string.module_cards, this::showModuleCards);
-        if (dockRow) addSettingsMenuRow(rows, popup, R.string.dock_edit, this::startDockEdit);
-        addSettingsMenuRow(rows, popup, R.string.reorder, this::toggleReorder);
-        // A launcher may not restart the TV itself; the Home key helper can open the system power menu instead.
-        if (HomeKeyService.canOpenPowerMenu()) addSettingsMenuRow(rows, popup, R.string.power_menu, HomeKeyService::openPowerMenu);
+        if (moduleCards) addSettingsMenuRow(rows, popup, R.string.module_cards, R.drawable.ic_apps, this::showModuleCards);
+        // apps_screen: pinned apps change from the hold menu on Home (Replace, Move), not from here.
+        if (dockRow && !appsScreen) addSettingsMenuRow(rows, popup, R.string.dock_edit, R.drawable.ic_apps, this::startDockEdit);
+        // apps_screen: reordering lives on the Apps screen (hold OK on an app there).
+        if (!appsScreen) addSettingsMenuRow(rows, popup, R.string.reorder, R.drawable.ic_swap_vert, this::toggleReorder);
+        // A launcher may not power off the TV itself; the Home key helper does it (PowerMenuActivity).
+        if (HomeKeyService.canOpenPowerMenu()) addSettingsMenuRow(rows, popup, R.string.power_menu, R.drawable.ic_power,
+                () -> startActivity(new Intent(this, PowerMenuActivity.class)));
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
         // Hebrew puts Settings at the left of the header: grow the menu inward from it.
@@ -3842,11 +4318,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (key == null || pkg == null || pkg.equals(getPackageName())) return;
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
-        PopupWindow popup = glassPopup(panel, (int) (200 * density));
+        PopupWindow popup = glassPopup(panel, (int) (TileMenu.WIDTH_DP * density));
         if (dockRow && position < adapter.movableCount()) {
             boolean inDock = position < COLUMNS;
-            addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock,
-                    () -> startDockEditFor(key, inDock));
+            addSettingsMenuRow(rows, popup, inDock ? R.string.tile_replace_in_dock : R.string.tile_add_to_dock, () -> {
+                // apps_screen: the app is chosen on a screen of its own (the Apps grid, titled Choose an app),
+                // and Home comes back with it in this place.
+                if (appsScreen && inDock) {
+                    replaceSlotKey = key;
+                    startActivityForResult(new Intent(this, AppsActivity.class).putExtra(AppsActivity.EXTRA_PICK, true),
+                            PICK_APP_REQUEST);
+                } else {
+                    startDockEditFor(key, inDock);
+                }
+            });
         }
         if (position < adapter.movableCount()) addSettingsMenuRow(rows, popup, R.string.tile_move, () -> {
             if (!beginReorder()) return;
@@ -3854,7 +4339,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (at < 0) return;
             focusTile(at);
             pickUp(at);
-            Toast.makeText(this, R.string.reorder_hint, Toast.LENGTH_LONG).show();
+            int hint = appsScreen ? R.string.apps_move_hint : R.string.reorder_hint;
+            if (onePiece) OnePieceSkin.toast(this, hint);
+            else Toast.makeText(this, hint, Toast.LENGTH_LONG).show();
         });
         if (appLibraryEnabled) addSettingsMenuRow(rows, popup, R.string.library_remove_shortcut, () -> {
             if (LibraryApps.save(this, pkg, false)) reloadApps(false);
@@ -3863,24 +4350,34 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Some firmware has no App info page at all; a row that only toasts "can't open" helps nobody.
         Intent info = SystemSettings.appInfo(this, pkg);
         if (info != null) addSettingsMenuRow(rows, popup, R.string.library_app_info, () -> open(info));
+        if (onePiece) OnePieceSkin.parchment(panel);
         panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        popup.setWidth(Math.max((int) (200 * density), panel.getMeasuredWidth()));
-        // Dock tiles sit near the bottom of the screen: open the menu above the tile when it would not fit below.
-        int[] at = new int[2];
-        card.getLocationInWindow(at);
-        int gap = (int) (10 * density), height = panel.getMeasuredHeight();
-        if (at[1] + card.getHeight() + gap + height <= root.getHeight()) {
-            dropIn(popup, panel, card, Gravity.START);
-        } else {
-            panel.setAlpha(0f);
-            panel.setPivotY(height);
-            panel.setScaleY(0.92f);
-            panel.setTranslationY(8 * density);
-            popup.showAtLocation(root, Gravity.NO_GRAVITY, at[0], Math.max(0, at[1] - gap - height));
-            panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(220)
-                    .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
-        }
+        int width = Math.max((int) (TileMenu.WIDTH_DP * density), panel.getMeasuredWidth());
+        popup.setWidth(width);
+        panel.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int height = panel.getMeasuredHeight();
+        // The same place and air round the app as the Apps screen's menu (TileMenu): clear of the focused tile's
+        // zoom, below it, or above it near the bottom of the screen.
+        int[] place = TileMenu.place(card, root, width, height, adapter.focusScale(), density);
+        boolean above = place[2] == 1;
+        panel.setAlpha(0f);
+        panel.setPivotY(above ? height : 0f);
+        panel.setScaleY(0.92f);
+        panel.setTranslationY((above ? 8 : -8) * density);
+        popup.showAtLocation(root, Gravity.NO_GRAVITY, place[0], place[1]);
+        panel.animate().alpha(1f).scaleY(1f).translationY(0f).setDuration(reducedMotion ? Motion.REDUCED_MS : 220)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(1.6f)).start();
         rows.getChildAt(0).requestFocus();
+    }
+
+    /** A settings menu row with an icon, which only the One Piece skin shows (its own drawn one); text only otherwise. */
+    private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, int icon, Runnable action) {
+        addSettingsMenuRow(rows, popup, title, action);
+        if (!onePiece) return;
+        ImageView image = rows.getChildAt(rows.getChildCount() - 1).findViewById(R.id.icon);
+        image.setVisibility(View.VISIBLE);
+        OnePieceSkin.rowIcon(image, icon);
     }
 
     private void addSettingsMenuRow(LinearLayout rows, PopupWindow popup, int title, Runnable action) {

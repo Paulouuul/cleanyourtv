@@ -9,6 +9,8 @@ import android.service.dreams.DreamService;
 public class ClockDream extends DreamService {
 
     private ClockScene scene;
+    /** One Piece skin: the opening on a loop, with the clock under its logo. */
+    private OnePieceScreensaver skin;
 
     @Override
     protected void attachBaseContext(android.content.Context base) {
@@ -21,8 +23,15 @@ public class ClockDream extends DreamService {
         setInteractive(false);   // any key wakes the TV back to where it was
         setFullscreen(true);
         setScreenBright(false);
+        Config cfg = Config.load(this);
+        if (OnePieceSkin.on(cfg)) {
+            skin = new OnePieceScreensaver(this, cfg);
+            setContentView(skin.root);
+            ClockFormat.apply(getWindow().getDecorView(), cfg.clockFormat);
+            return;
+        }
         setContentView(R.layout.dream_clock);
-        ClockFormat.apply(getWindow().getDecorView(), Config.load(this).clockFormat);
+        ClockFormat.apply(getWindow().getDecorView(), cfg.clockFormat);
         scene = new ClockScene(getWindow().getDecorView());
         scene.useHomeWallpaper(this);
     }
@@ -30,12 +39,17 @@ public class ClockDream extends DreamService {
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
+        if (skin != null) {
+            skin.start();
+            return;
+        }
         scene.start();
     }
 
     @Override
     public void onDreamingStopped() {
-        scene.stop();
+        if (skin != null) skin.stop();
+        if (scene != null) scene.stop();
         super.onDreamingStopped();
     }
 

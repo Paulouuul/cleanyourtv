@@ -45,7 +45,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SHOWCASE = ROOT / "SHOWCASE.md"
-README = ROOT / "README.md"
+README = ROOT / "CLEANYOURTV.md"
 
 # The page held 50+ rows when this test landed. A parser that silently matches nothing (a changed
 # row layout, a reordered page) must not read as "0 == 0, all good".
@@ -196,7 +196,7 @@ def pt_spelled(lines):
 # language's parser; a page that writes it in digits (which is what a classifier or a compound would
 # otherwise sit in the way of) is read with digits_number().
 COUNT_PAGES = {
-    "README.md": ("projects", spelled_number),
+    "CLEANYOURTV.md": ("projects", spelled_number),
     "README.fr.md": ("projets", digits_number),
     "README.pt-BR.md": ("projetos", spelled_number_pt),
     "README.de.md": ("Projekte", digits_number),
@@ -221,7 +221,7 @@ def audit(showcase_lines):
     if stated != counted:
         return stated, counted, (
             f"SHOWCASE.md says {stated} projects and its tables hold {counted} rows: bump the number "
-            "(and README.md's spelled one) when you add a project"
+            "(and CLEANYOURTV.md's spelled one) when you add a project"
         )
     return stated, counted, None
 

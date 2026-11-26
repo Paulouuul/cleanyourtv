@@ -9,6 +9,15 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- The Continue watching row (config.xml continue_watching): reads the Watch Next table. A runtime
+         permission, granted by build-and-install with pm grant rather than asked for on screen. -->
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+    <!-- Private build only: the Continue watching row downloads https:// posters. The repo's launcher has no
+         INTERNET permission. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Private build only: Uninstall on the Apps screen hands an app the owner installed to the system's own
+         uninstall confirmation. The repo's launcher has no such permission. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
          runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with
          FINE" rule does not apply here. -->
@@ -34,6 +43,9 @@
         </intent>
         <intent>
             <action android:name="android.settings.DISPLAY_SETTINGS" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.SOUND_SETTINGS" />
         </intent>
         <intent>
             <action android:name="android.settings.MANAGE_APPLICATIONS_SETTINGS" />
@@ -106,6 +118,12 @@
             </intent-filter>
         </activity>
 
+        <!-- apps_screen: every TV app in a grid of its own, from the Apps button in Home's top bar. -->
+        <activity
+            android:name=".AppsActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape" />
         <activity
             android:name=".LauncherSettingsActivity"
             android:exported="false"
@@ -176,6 +194,16 @@
                 <data android:scheme="market" android:host="launch" />
             </intent-filter>
         </activity>
+
+        <!-- The launcher's own "Power off the TV?" (PowerMenuActivity), over whatever is on screen. -->
+        <activity
+            android:name=".PowerMenuActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
 
         <!-- The same clock, started by Home itself after home_idle_clock_minutes without input. -->
         <activity

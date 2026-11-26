@@ -29,6 +29,12 @@ public class GlassView extends View {
     /** glass_style rim or halo: no sheen and no fill, only the crisp rim (and, for halo, a lighter outer glow). */
     private boolean flat;
     private boolean halo;
+    /** One Piece skin: focus is the twisted gold rope (ropeFrame) instead of the plain rim. */
+    private boolean rope;
+    /** One Piece skin: the twisted rope itself (OnePieceFrames.Rope), drawn over the slab's rect. */
+    private OnePieceFrames.Rope ropeFrame;
+    /** The red rope that marks the app being carried while Home's apps are moved (an accent is set). */
+    private OnePieceFrames.Rope ropeCarried;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -46,6 +52,12 @@ public class GlassView extends View {
 
     /** Tints the rim and the outer glow; 0 restores the plain white glass. */
     void setAccent(int argb) {
+        accent = argb;
+        if (flat) {
+            applyFlatRim();
+            invalidate();
+            return;
+        }
         if (argb == 0) {
             glowRgb = 0xFFFFFF;
             glowAlpha = 0x30;
@@ -66,12 +78,53 @@ public class GlassView extends View {
         flat = Config.GLASS_RIM.equals(style) || Config.GLASS_HALO.equals(style);
         halo = Config.GLASS_HALO.equals(style);
         rim.setStrokeWidth((flat ? 2f : 1.5f) * density);
+        if (flat) applyFlatRim();
         invalidate();
+    }
+
+    private int accent;
+
+    /** The One Piece skin's gold rope for focus; it implies the flat rim. */
+    void setRope(boolean on) {
+        rope = on;
+        if (on) {
+            flat = true;
+            halo = false;
+            applyFlatRim();
+            ropeFrame = OnePieceFrames.Rope.gold(density, radius);
+            ropeFrame.setCallback(this);
+            ropeCarried = OnePieceFrames.Rope.red(density, radius);
+            ropeCarried.setCallback(this);
+        }
+        invalidate();
+    }
+
+    /**
+     * The flat styles draw the same outline as the Apps screen's tiles: solid white, 3dp, and the accent itself at
+     * 4dp while an app is carried, so focus reads the same on Home and on the Apps screen (TCL 32S5K build).
+     */
+    private void applyFlatRim() {
+        rim.setColor(accent == 0 ? (rope ? OnePieceSkin.GOLD : 0xFFFFFFFF) : 0xFF000000 | (accent & 0xFFFFFF));
+        rim.setStrokeWidth((accent == 0 ? (rope ? 4.5f : 3f) : 4f) * density);
     }
 
     void setRadius(float px) {
         radius = px;
+        if (ropeFrame != null) {
+            ropeFrame.setRadius(px);
+            ropeCarried.setRadius(px);
+        }
         invalidate();
+    }
+
+    /** One Piece skin: the rope's focus move, as the highlight lands on a tile. */
+    void playRope() {
+        if (ropeFrame != null && accent == 0) ropeFrame.play();
+    }
+
+    @Override
+    protected boolean verifyDrawable(@androidx.annotation.NonNull android.graphics.drawable.Drawable who) {
+        return who == ropeFrame || who == ropeCarried || super.verifyDrawable(who);
     }
 
     @Override
@@ -102,6 +155,12 @@ public class GlassView extends View {
             }
         }
         if (flat) {
+            if (ropeFrame != null) {
+                OnePieceFrames.Rope r = accent == 0 ? ropeFrame : ropeCarried;
+                r.setBounds(Math.round(rect.left), Math.round(rect.top), Math.round(rect.right), Math.round(rect.bottom));
+                r.draw(canvas);
+                return;
+            }
             canvas.drawRoundRect(rect, radius, radius, rim);
             return;
         }

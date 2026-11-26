@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Domů</string>
     <string name="inputs">Vstupy</string>
     <string name="wifi">Wi-Fi</string>
     <string name="settings">Nastavení</string>
@@ -24,7 +23,7 @@
     <string name="vpn">VPN</string>
     <string name="vpn_off">VPN vypnutá</string>
     <string name="home_settings">Výchozí domovská obrazovka</string>
-    <string name="home_settings_help">Vyberte původní domovskou obrazovku, pokud už nechcete CleanYourTV používat jako domovskou, nebo CleanYourTV, pokud se k ní chcete vrátit. Původní launcher musí být zapnutý a televize musí nabízet výběr domovské obrazovky. Pokud byl vypnutý, spusťte nejdřív skript pro obnovení.</string>
+    <string name="home_settings_help">Vyberte původní domovskou obrazovku, pokud už nechcete “Domů” používat jako domovskou, nebo “Domů”, pokud se k ní chcete vrátit. Původní launcher musí být zapnutý a televize musí nabízet výběr domovské obrazovky. Pokud byl vypnutý, spusťte nejdřív skript pro obnovení.</string>
     <string name="launcher_settings">Nastavení domovské obrazovky</string>
     <string name="native_settings">Nastavení výrobce</string>
     <string name="columns_label">Aplikací v řádku</string>
@@ -79,7 +78,12 @@
     <string name="quick_apps">Aplikace</string>
     <string name="quick_apps_hint">Znovu zapnout</string>
     <string name="dock_edit">Upravit dok</string>
-    <string name="power_menu">Restartovat…</string>
+    <string name="power_menu">Vypnout…</string>
+    <string name="power_off">Vypnout</string>
+    <string name="power_confirm">Vypnout televizor?</string>
+    <string name="power_yes">Ano</string>
+    <string name="power_no">Ne</string>
+    <string name="skin_state">Vzhled motivu: %1$s</string>
     <string name="dock_edit_hint">Vyberte místo v doku, které chcete změnit, a stiskněte OK. Tlačítkem Zpět skončíte.</string>
     <string name="dock_edit_pick_app">Nyní vyberte aplikaci pro toto místo a stiskněte OK. Tlačítkem Zpět vyberete jiné místo.</string>
     <string name="tile_add_to_dock">Přidat do doku</string>

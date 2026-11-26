@@ -17,7 +17,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONT = "README.md"
+FRONT = "CLEANYOURTV.md"
 TRANSLATION = re.compile(r"^README\.[A-Za-z][A-Za-z-]*\.md$")
 # `[text](target)` and `href="target"`, the two shapes the language rows use.
 LINK = re.compile(r"\]\(([^)\s]+)\)|href=\"([^\"]+)\"")
@@ -86,7 +86,7 @@ class LinkReaderTest(unittest.TestCase):
         self.assertEqual(set(), links("[site](https://cleanyour.tv) [mail](mailto:a@b) [#top](#top)"))
 
     def test_a_missing_language_is_reported(self):
-        text = "[English](README.md) · [日本語](README.ja.md)"
+        text = "[English](CLEANYOURTV.md) · [日本語](README.ja.md)"
         self.assertEqual(["README.vi.md"], missing([FRONT, "README.ja.md", "README.vi.md"], text))
 
     def test_a_page_that_links_nothing_reports_everything(self):

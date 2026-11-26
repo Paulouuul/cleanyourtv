@@ -256,6 +256,8 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        // The remote's own Home button, as against an app sending Home (Google Home's panel does): Home greets only then.
+        if (event.getKeyCode() == KeyEvent.KEYCODE_HOME) MainActivity.noteHomeKey();
         // power_on_home: the first key after power-on hands the TV to the user (power and wake keys don't count).
         if (powerOnUntil != 0 && event.getAction() == KeyEvent.ACTION_DOWN
                 && event.getKeyCode() != KeyEvent.KEYCODE_POWER && event.getKeyCode() != KeyEvent.KEYCODE_WAKEUP) {
@@ -279,7 +281,11 @@ public class HomeKeyService extends AccessibilityService {
             RemoteKeys.handle(this, event, null, hold);
             boolean held = hold != null && event.getEventTime() - event.getDownTime() >= RemoteKeys.HOLD_MS;
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled() && !held) {
-                Intent open = settingsPanel ? new Intent(this, QuickSettingsActivity.class)
+                // Whether Home is in front as the key is pressed, read now: by the time the panel starts, an app that
+                // was just opened may still be loading with Home not yet stopped, and the panel took that for Home.
+                Intent open = settingsPanel
+                        ? new Intent(this, QuickSettingsActivity.class)
+                                .putExtra(QuickSettingsActivity.EXTRA_OVER_HOME, MainActivity.homeInFront())
                         : SystemSettings.intent(this, Settings.ACTION_SETTINGS);
                 // settings_key_clear_task: on MediaTek boards KEYCODE_SETTINGS is also a global key that opens Display &
                 // Sound in the Settings task before this helper sees it; cleared, Back from Settings goes Home, not there.
@@ -370,15 +376,15 @@ public class HomeKeyService extends AccessibilityService {
         return now < armedUntil;
     }
 
-    /** The settings menu offers Restart only while this helper is bound: it opens the system power menu. */
+    /** The settings menu offers Power off only while this helper is bound: it carries it out. */
     static boolean canOpenPowerMenu() {
         return running != null;
     }
 
-    /** The system power menu (Restart, and Power off where the firmware has it); the TV asks before it acts. */
-    static void openPowerMenu() {
+    /** Power off from the launcher's own power menu: rest (screen off), as a tap on the remote's power key. */
+    static void powerOff() {
         HomeKeyService service = running;
-        if (service != null) service.performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
+        if (service != null) service.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
     }
 
     static boolean powerOnRedirect(String liveTv, CharSequence pkg, long now, long armedUntil) {

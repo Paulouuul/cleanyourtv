@@ -121,7 +121,7 @@ is unset promises a rotation the launcher does not run, since a theme without th
 and a licence it states ("The photos are CC BY / CC BY-SA, not MIT") to that theme's `CREDITS.md`, which
 the folder then has to have. A row that states neither is quiet.
 
-Then bump the count in the Themes feature row of every front page that states it: `README.md` ("`N ship in
+Then bump the count in the Themes feature row of every front page that states it: `CLEANYOURTV.md` ("`N ship in
 themes/`"), `README.de.md`, `README.nl.md`, `README.uk.md`, `README.tr.md`, `README.pt-BR.md`,
 `README.he.md`, `README.uz.md`, `README.fr.md` and `README.es.md` (the last six in digits), each in its own words. Those ten pages are
 the ones that state it today rather than the rule. `tests/test_readme_theme_count.py` counts the folders

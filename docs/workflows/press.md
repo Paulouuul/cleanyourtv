@@ -6,7 +6,7 @@
    headline's own language. The link must open and show the article: no syndicated copies, no auto-generated
    listings, nothing that cannot be checked.
 2. Update the counts in every place `tests/test_press_counts.py` checks: the `docs/PRESS.md` intro line, its
-   index line, the card's alt text in every `README*.md` that shows `docs/card.jpg` - today `README.md` ("and N
+   index line, the card's alt text in every `README*.md` that shows `docs/card.jpg` - today `CLEANYOURTV.md` ("and N
    more: N articles from N countries"), the Dutch `README.nl.md` ("nog N media: N artikelen uit N landen") and
    the German `README.de.md` ("und N weitere: N Artikel aus N Ländern"), the Ukrainian
    `README.uk.md` ("та ще N видань: N статей із N країн") and the Turkish `README.tr.md`
@@ -30,7 +30,7 @@
    stars it had in the sentence before, and its coverage sentence ends at the link. That paragraph is also
    read on the four front pages that have it without the card:
    `README.pt-BR.md`, the Hebrew `README.he.md`, the Uzbek `README.uz.md` and the French `README.fr.md` show
-   no `docs/card.jpg`, so their numbers are held to `README.md`'s alt text and to `docs/PRESS.md` on their
+   no `docs/card.jpg`, so their numbers are held to `CLEANYOURTV.md`'s alt text and to `docs/PRESS.md` on their
    own, and their coverage clause has to open with a colon like the others ("A repercussão: 412 artigos
    ...", "סיקור בתקשורת: 412 כתבות ...", "Matbuotdagi aks: 412 maqola ...", "La couverture médiatique :
    534 articles ..."), since that colon is what the reader cuts the three numbers at.

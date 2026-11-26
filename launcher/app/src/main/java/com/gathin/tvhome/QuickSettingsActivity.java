@@ -18,6 +18,9 @@ import android.widget.Toast;
  * closes the panel.
  */
 public final class QuickSettingsActivity extends Activity {
+    /** Extra: Home was in front when the Settings key was pressed, so the panel lines up under its Settings pill. */
+    static final String EXTRA_OVER_HOME = "com.gathin.tvhome.extra.OVER_HOME";
+
     @Override
     protected void attachBaseContext(android.content.Context base) {
         super.attachBaseContext(LauncherLocale.wrap(base));   // locale
@@ -38,16 +41,34 @@ public final class QuickSettingsActivity extends Activity {
             position.setMargins(inset, position.topMargin, 0, position.bottomMargin);
             panel.setLayoutParams(position);
         }
+        final boolean overHome = getIntent().hasExtra(EXTRA_OVER_HOME)
+                ? getIntent().getBooleanExtra(EXTRA_OVER_HOME, false) : MainActivity.panelOverHome();
+        if (!overHome) {
+            // Over any other app there is no Settings pill to line up under: the panel sits in the corner, a small
+            // gap from the top and side edges of the screen.
+            View panel = findViewById(R.id.panel);
+            android.widget.FrameLayout.LayoutParams position =
+                    (android.widget.FrameLayout.LayoutParams) panel.getLayoutParams();
+            int gap = Math.round(16 * getResources().getDisplayMetrics().density);
+            position.setMargins(gap, gap, gap, position.bottomMargin);
+            position.setMarginStart(gap);
+            position.setMarginEnd(gap);
+            panel.setLayoutParams(position);
+        }
         findViewById(R.id.scrim).setOnClickListener(v -> finish());
         LinearLayout rows = findViewById(R.id.rows);
         addRow(rows, R.drawable.ic_settings, R.string.tv_settings, 0, SystemSettings.intent(this, Settings.ACTION_SETTINGS));
         addRow(rows, R.drawable.ic_picture, R.string.quick_picture, 0, SystemSettings.displayIntent(this));
+        addRow(rows, R.drawable.ic_sound, R.string.quick_sound, 0, SystemSettings.soundIntent(this));
         addRow(rows, R.drawable.ic_wifi, R.string.quick_network, 0, SystemSettings.intent(this, Settings.ACTION_WIFI_SETTINGS));
-        addRow(rows, R.drawable.ic_apps, R.string.quick_apps, R.string.quick_apps_hint,
-                SystemSettings.intent(this, Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS));
-        // Through Home, so it rebuilds with the new choices when Launcher settings closes.
-        addRow(rows, R.drawable.ic_home_settings, R.string.launcher_settings, 0,
-                new Intent(this, MainActivity.class).setAction(MainActivity.ACTION_LAUNCHER_SETTINGS));
+        // Apps and Launcher settings left this panel: it is for the TV's own settings over the app in front, and
+        // Launcher settings lives in the Home screen's Settings menu (settings_pill_menu).
+        if (OnePieceSkin.on(Config.load(this))) {
+            // The One Piece skin: a parchment panel, opened with the anime's alert sound, quietly.
+            OnePieceSkin.parchment(findViewById(R.id.panel));
+            OnePieceSkin.loadSounds(this);
+            OnePieceSkin.clickPanel();
+        }
         rows.getChildAt(0).requestFocus();
     }
 
@@ -69,7 +90,7 @@ public final class QuickSettingsActivity extends Activity {
 
     private void addRow(LinearLayout rows, int icon, int title, int status, Intent target) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        ((ImageView) row.findViewById(R.id.icon)).setImageResource(icon);
+        OnePieceSkin.rowIcon(row.findViewById(R.id.icon), icon);
         ((TextView) row.findViewById(R.id.title)).setText(title);
         row.findViewById(R.id.dot).setVisibility(View.GONE);
         TextView hint = row.findViewById(R.id.status);

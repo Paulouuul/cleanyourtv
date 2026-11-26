@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Home</string>
     <string name="inputs">Quellen</string>
     <string name="wifi">WLAN</string>
     <string name="settings">Einstellungen</string>
@@ -44,7 +43,12 @@
     <string name="off">Aus</string>
     <string name="enable">Aktivieren</string>
     <string name="dock_edit">Dock bearbeiten</string>
-    <string name="power_menu">Neu starten…</string>
+    <string name="power_menu">Ausschalten…</string>
+    <string name="power_off">Ausschalten</string>
+    <string name="power_confirm">Fernseher ausschalten?</string>
+    <string name="power_yes">Ja</string>
+    <string name="power_no">Nein</string>
+    <string name="skin_state">Theme-Skin: %1$s</string>
     <string name="dock_edit_hint">Wähle den Dock-Platz, den du ändern willst, und drücke OK. Zurück zum Beenden.</string>
     <string name="dock_edit_pick_app">Wähle jetzt die App für diesen Platz und drücke OK. Zurück, um einen anderen Platz zu wählen.</string>
     <string name="tile_add_to_dock">Zum Dock hinzufügen</string>
