@@ -28,17 +28,41 @@ class StatusThemesTest(unittest.TestCase):
         self.broken.write_text("{", encoding="utf-8")
 
     def status(self, config):
+        def fake_tv(command, quiet=False):
+            # `status` asks the TV which package answers HOME first, then reads that launcher's config.json.
+            return "" if command.startswith("cmd package query-activities") else config
+
         out = io.StringIO()
         with mock.patch.object(manage, "ROOT", self.root), \
                 mock.patch.object(manage, "installed_packages", return_value={manage.LAUNCHER_PKG}), \
                 mock.patch.object(manage, "addons", return_value=[]), \
                 mock.patch.object(manage, "themes", return_value=[{"id": "broken"}, {"id": "working"}]), \
-                mock.patch.object(manage, "tv", return_value=config) as tv, \
+                mock.patch.object(manage, "tv", side_effect=fake_tv) as tv, \
                 contextlib.redirect_stdout(out):
             code = manage.cmd_status()
-        tv.assert_called_once_with(f"cat /sdcard/Android/data/{manage.LAUNCHER_PKG}/files/config.json 2>/dev/null")
+        tv.assert_any_call(f"cat /sdcard/Android/data/{manage.LAUNCHER_PKG}/files/config.json 2>/dev/null")
         self.assertIn("launcher: installed", out.getvalue())
         return code, out.getvalue()
+
+    def test_a_pushed_example_folder_is_named(self):
+        # The examples/ READMEs hand out `tools/theme.sh examples/<tv>`; status called that push "your own".
+        example = self.root / "examples" / "acme-tv" / "config.json"
+        example.parent.mkdir(parents=True)
+        pushed = json.dumps({"dock_apps": ["com.acme.live"]})
+        example.write_text(pushed, encoding="utf-8")
+        code, out = self.status(pushed)
+        self.assertEqual(code, 0)
+        self.assertIn("theme: examples/acme-tv", out)
+
+    def test_identical_example_folders_are_all_named(self):
+        pushed = json.dumps({"dock_apps": ["com.shared.live"]})
+        for tv in ("alpha-tv", "beta-tv"):
+            example = self.root / "examples" / tv / "config.json"
+            example.parent.mkdir(parents=True)
+            example.write_text(pushed, encoding="utf-8")
+        code, out = self.status(pushed)
+        self.assertEqual(code, 0)
+        self.assertIn("theme: examples/alpha-tv or examples/beta-tv", out)
 
     def test_a_bad_candidate_does_not_hide_a_later_matching_theme(self):
         for contents in (b'{"columns":', b"\xff"):
