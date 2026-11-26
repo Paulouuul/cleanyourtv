@@ -175,6 +175,10 @@ o Continuar assistindo, nomes de rede Wi-Fi, contas e nomes de dispositivo.
 
 ## Créditos
 
+- **Launcher One Piece:** feito por [Paulouuul](https://github.com/Paulouuul).
+- **Continuar assistindo:** a fileira lida da tabela Watch Next veio de [gwiersma](https://github.com/gwiersma); as
+  capas por https, a ordem por série e o ícone do app em cada card vieram de
+  [Federico Ferretti](https://github.com/ferrets6).
 - [CleanYourTV](https://github.com/Gathin23/cleanyourtv), de Gathin23 e colaboradores: o launcher, as
   ferramentas e as listas de limpeza em que este fork se apoia. Licença MIT.
 - One Piece é uma obra de Eiichiro Oda (Shueisha, Toei Animation). Os nomes, personagens e a arte usados na skin
