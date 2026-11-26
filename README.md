@@ -5,7 +5,7 @@
 <h1 align="center">One Piece — launcher para Android TV</h1>
 
 <p align="center">
-  Um launcher com tema de One Piece para a TCL 32S5K (Google TV 14), feito como fork do
+  Um launcher com tema de One Piece para Android TV e Google TV, feito como fork do
   <a href="https://github.com/Gathin23/cleanyourtv">CleanYourTV</a>.
 </p>
 
@@ -13,8 +13,10 @@
 
 Este repositório nasceu de um fork do [CleanYourTV](https://github.com/Gathin23/cleanyourtv), um projeto que tira os
 apps inúteis de qualquer Android TV pelo Wi-Fi e troca a tela inicial cheia de anúncios por um launcher limpo. Aqui o
-launcher dele (`com.gathin.tvhome`) ganhou uma **skin completa de One Piece** e uma Home mais simples, ajustadas
-para uma TV específica: a **TCL 32S5K (placa G13, Google TV 14)**.
+launcher dele (`com.gathin.tvhome`) ganhou uma **skin completa de One Piece** e uma Home mais simples. Ele roda
+em **qualquer Android TV ou Google TV com Android 8 ou mais novo**: televisores, projetores e TV boxes de
+dezenas de marcas (veja [Compatibilidade](#compatibilidade)). Foi desenvolvido numa TCL 32S5K (Google TV 14), de
+onde vêm as imagens desta página.
 
 A documentação original do CleanYourTV (limpeza da TV, listas por modelo, ferramentas, restauração) continua neste
 repositório, em **[CLEANYOURTV.md](CLEANYOURTV.md)**. Tudo o que ela descreve continua valendo aqui.
@@ -99,6 +101,62 @@ Precisa de JDK 17, Android SDK 34 e uma TV com ADB pela rede ligado. A instalaç
 
 A configuração da TCL 32S5K (quatro tiles fixados, tela Apps, Continuar assistindo, menu do timão) está em
 [`launcher/app/src/main/res/values/config.xml`](launcher/app/src/main/res/values/config.xml).
+
+## Compatibilidade
+
+O launcher é o mesmo do CleanYourTV, testado pela comunidade em **468 modelos de 126 marcas**. Vale para
+qualquer aparelho com **Android TV ou Google TV** e **Android 8 (SDK 26) ou mais novo**: televisores, projetores
+e TV boxes.
+
+| Plataforma | Launcher One Piece |
+|---|---|
+| **Android TV e Google TV**, Android 9 ou mais novo | Tudo: Home, tela Apps, Continuar assistindo, menus, skin, abertura, protetor de tela, sons, ícones animados e o cumprimento do Luffy. |
+| **Android TV**, Android 8 | Tudo, menos o cumprimento animado do Luffy, que precisa de Android 9. |
+| **Android TV** abaixo do Android 8 | Não instala: o launcher pede SDK 26 no mínimo. |
+| **Fire TV** (Amazon e TVs com Fire OS) | Não dá para usar como tela inicial: o Fire OS não entrega a Home a um launcher de terceiros. A limpeza de apps funciona. |
+| **Algumas TCL do mercado chinês** | Recusam instalar qualquer launcher; as listas delas em [`examples/`](examples/) avisam no cabeçalho. |
+| **Samsung (Tizen), LG (webOS), Roku, Vizio, Hisense VIDAA** | Não funciona (não têm ADB). Dá para desligar o rastreamento pelo controle: [cleanyour.tv/not-android](https://cleanyour.tv/not-android). |
+
+**Marcas com modelos testados** (número de modelos em [`examples/`](examples/)): TCL 85, Sony 50, Xiaomi 44,
+Philips 23, Skyworth 17, Hisense (Android/Google TV) 16, Sharp 10, Xgimi 8, Panasonic 8, Haier 7, BenQ 6, JVC 6,
+Toshiba 6, OnePlus 4, Formovie 4, Acer 4, Thomson 4, Nokia 4, além de NVIDIA Shield, Anker Nebula, Motorola,
+Grundig, RCA, Redmi, FFalcon, Vu e outras. A lista completa, com cada modelo, está no
+[índice de exemplos](examples/README.md) e no [CLEANYOURTV.md](CLEANYOURTV.md).
+
+O modelo não precisa estar na lista: qualquer aparelho que atenda os requisitos acima roda o launcher. A pasta
+do modelo só ajuda com a limpeza e com ajustes já conhecidos.
+
+### O que foi ajustado para a TV de desenvolvimento (TCL 32S5K)
+
+| Ponto | Na 32S5K | Em outra TV |
+|---|---|---|
+| [`config.xml`](launcher/app/src/main/res/values/config.xml) | `apps_screen`, `continue_watching`, `settings_key_panel` e `settings_pill_menu` ligados; `dock_band` desligado; `glass_style` como `rim`. | Quase tudo é questão de gosto e funciona em qualquer TV. A exceção é o `settings_key_panel` (o botão Configurações do controle abre o painel), que depende de o controle mandar essa tecla, e isso varia por marca. |
+| Tecla Home e menu de desligar | Funcionam pelo serviço instalado com `HOME_KEY_SERVICE=1`. | Costuma funcionar, mas teste com o controle de verdade: uma tecla injetada pelo ADB não prova que o botão físico passa pelo serviço. |
+| Desligar sem Reiniciar | O Reiniciar saiu porque, nesta TV, reiniciar volta em standby. | O menu só com Desligar funciona igual. |
+| Linha "Som" no painel do controle | Abre o painel lateral de som da TCL. | Abre a tela de som padrão do Android. |
+| Continuar assistindo | Crunchyroll, YouTube, Netflix e Prime Video aparecem. | Depende de os apps publicarem na tabela Watch Next do Android; alguns apps de fabricante não publicam. |
+
+### Como adaptar para a sua TV
+
+1. **Ajuste o [`config.xml`](launcher/app/src/main/res/values/config.xml)** para a TV nova. Se o modelo já tem uma
+   pasta em [`examples/`](examples/), o `config.json` e o `README.md` dela mostram o que funcionou ali; o
+   [CLEANYOURTV.md](CLEANYOURTV.md) explica as listas e as opções do launcher.
+2. **Instale com o serviço da tecla Home:**
+
+   ```bash
+   TV_HOST=<tv ip> HOME_KEY_SERVICE=1 launcher/build-and-install.sh
+   ```
+
+3. **Envie o tema One Piece** com `tools/theme.sh`, como em [Instalar](#instalar).
+4. **Teste no controle de verdade:** o direcional nas quatro direções, a partir de cada borda; os botões Home,
+   Configurações e Voltar; e o menu de desligar, que só deve abrir e fechar sem confirmar.
+
+> **Placas CVTE** (TVs com pacotes `com.cvte.*`): não desligue o launcher original da TV. Defina este como Home
+> com `cmd package set-home-activity`, reinicie uma vez e confirme que a Home e o ADB voltaram antes de mexer em
+> qualquer outra coisa. Uma TV dessas já travou na animação de inicialização (detalhes no [AGENTS.md](AGENTS.md)).
+
+A limpeza da TV (desativar apps de fábrica e anúncios) é opcional e segue o [PROMPT.md](PROMPT.md) do
+CleanYourTV: nada é desinstalado, e tudo volta com `tools/restore.sh`.
 
 ## Gravar telas para a documentação
 
