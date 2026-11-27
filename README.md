@@ -13,7 +13,7 @@
 
 Este repositório nasceu de um fork do [CleanYourTV](https://github.com/Gathin23/cleanyourtv), um projeto que tira os
 apps inúteis de qualquer Android TV pelo Wi-Fi e troca a tela inicial cheia de anúncios por um launcher limpo. Aqui o
-launcher dele (`com.gathin.tvhome`) ganhou uma **skin completa de One Piece** e uma Home mais simples. Ele roda
+launcher dele ganhou uma **skin completa de One Piece** e uma Home mais simples. Ele roda
 em **qualquer Android TV ou Google TV com Android 8 ou mais novo**: televisores, projetores e TV boxes de
 dezenas de marcas (veja [Compatibilidade](#compatibilidade)). Foi desenvolvido numa TCL 32S5K (Google TV 14), de
 onde vêm as imagens desta página.
@@ -72,6 +72,9 @@ repositório, em **[CLEANYOURTV.md](CLEANYOURTV.md)**. Tudo o que ela descreve c
 
 Precisa de JDK 17, Android SDK 34 e uma TV com ADB pela rede ligado. A instalação segue a do CleanYourTV
 ([CLEANYOURTV.md](CLEANYOURTV.md) e [docs/launcher.md](docs/launcher.md)), com dois cuidados:
+
+O app é instalado com o nome de pacote próprio `io.github.paulouuul.onepiecetv`, definido em
+`launcher/gradle.properties`, e não com o `com.gathin.tvhome` do CleanYourTV: os dois podem conviver na mesma TV.
 
 1. **Instale sempre com `HOME_KEY_SERVICE=1`.** O serviço da tecla Home é quem faz o botão Configurações do
    controle abrir o painel, o Luffy saber que você apertou Home e o menu de desligar funcionar:

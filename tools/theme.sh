@@ -86,7 +86,11 @@ PY=venv/bin/python
 [ -x "$PY" ] || { echo "run: python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt." \
   "Nothing was sent to the TV." >&2; exit 2; }
 export MSYS_NO_PATHCONV=1
-PKG=com.gathin.tvhome
+# The launcher's application id, as launcher/build-and-install.sh reads it: LAUNCHER_ID, else launcherApplicationId in
+# launcher/gradle.properties, else com.gathin.tvhome. theme_restart.py gets it through LAUNCHER_ID.
+PKG=${LAUNCHER_ID:-$(sed -n 's/^[[:space:]]*launcherApplicationId[[:space:]]*=[[:space:]]*\([A-Za-z0-9_.]*\).*/\1/p' ../launcher/gradle.properties 2>/dev/null | head -n 1 || true)}
+PKG=${PKG:-com.gathin.tvhome}
+export LAUNCHER_ID=$PKG
 DIR=/sdcard/Android/data/$PKG/files
 # A unique marker lets the launcher clear on-TV layout/motion choices after every theme push,
 # including a push of identical config.json bytes and --reset.

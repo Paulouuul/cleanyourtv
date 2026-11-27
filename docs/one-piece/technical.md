@@ -6,6 +6,12 @@ uma. Instalação e uso estão no [README](../../README.md).
 
 Código-fonte: `launcher/app/src/main/java/com/gathin/tvhome/`. Recursos: `launcher/app/src/main/res/`.
 
+**Nome de pacote:** o app é instalado como `io.github.paulouuul.onepiecetv` (`launcherApplicationId` em
+`launcher/gradle.properties`), e não como o `com.gathin.tvhome` do CleanYourTV. As classes continuam no pacote Java
+`com.gathin.tvhome`, então os componentes são escritos por extenso, por exemplo
+`io.github.paulouuul.onepiecetv/com.gathin.tvhome.MainActivity`. `launcher/build-and-install.sh` e `tools/theme.sh`
+leem o nome do `gradle.properties`, e a variável `LAUNCHER_ID` o substitui.
+
 ## Sumário
 
 1. [Visão geral](#1-visão-geral)
@@ -330,10 +336,10 @@ Todos os comandos usam `tools/tv.py` com a variável `TV_HOST` definida, sem dep
 ```bash
 export TV_HOST=<tv ip>
 tools/venv/bin/python tools/tv.py --batch <<'EOF'
-dumpsys gfxinfo com.gathin.tvhome reset
+dumpsys gfxinfo io.github.paulouuul.onepiecetv reset
 sleep 5
-dumpsys gfxinfo com.gathin.tvhome | grep 'Total frames rendered'
-top -b -n 4 -d 2 -p $(pidof com.gathin.tvhome) | grep tvhome
+dumpsys gfxinfo io.github.paulouuul.onepiecetv | grep 'Total frames rendered'
+top -b -n 4 -d 2 -p $(pidof io.github.paulouuul.onepiecetv) | grep onepiecetv
 EOF
 ```
 
@@ -344,7 +350,7 @@ EOF
 ### Memória do processo
 
 ```bash
-tools/venv/bin/python tools/tv.py "dumpsys meminfo com.gathin.tvhome"
+tools/venv/bin/python tools/tv.py "dumpsys meminfo io.github.paulouuul.onepiecetv"
 ```
 
 - **Métrica principal:** a memória privada suja (`Private Dirty`), em especial o `Native Heap`, que contém os
@@ -356,9 +362,9 @@ tools/venv/bin/python tools/tv.py "dumpsys meminfo com.gathin.tvhome"
 - **Memória gráfica:** o dispositivo de referência não reporta memória de GPU (as linhas correspondentes ficam
   vazias). Um bitmap de hardware deixa o `Native Heap` e passa a ocupar memória gráfica; o tamanho dele é estimado
   por largura × altura × 4.
-- **`am force-stop`:** `am force-stop com.gathin.tvhome` desativa o `HomeKeyService`. Para reativar, reinstale com
+- **`am force-stop`:** `am force-stop io.github.paulouuul.onepiecetv` desativa o `HomeKeyService`. Para reativar, reinstale com
   `HOME_KEY_SERVICE=1` ou execute
-  `settings put secure enabled_accessibility_services com.gathin.tvhome/.HomeKeyService`.
+  `settings put secure enabled_accessibility_services io.github.paulouuul.onepiecetv/com.gathin.tvhome.HomeKeyService`.
 
 ### Bitmaps em memória
 
@@ -371,7 +377,7 @@ tools/venv/bin/python tools/b64push.py launcher/app/build/outputs/apk/debug/app-
 tools/venv/bin/python tools/tv.py --batch <<'EOF'
 pm install -r /data/local/tmp/l.apk
 rm /data/local/tmp/l.apk
-am dumpheap -g com.gathin.tvhome /data/local/tmp/l.hprof
+am dumpheap -g io.github.paulouuul.onepiecetv /data/local/tmp/l.hprof
 EOF
 tools/venv/bin/python tools/tv.py --pull /data/local/tmp/l.hprof l.hprof
 python3 tools/hprof_bitmaps.py l.hprof
@@ -388,7 +394,7 @@ python3 tools/hprof_bitmaps.py l.hprof
 tools/venv/bin/python tools/tv.py --batch <<'EOF'
 input keyevent HOME
 sleep 8
-am send-trim-memory com.gathin.tvhome RUNNING_LOW
+am send-trim-memory io.github.paulouuul.onepiecetv RUNNING_LOW
 monkey -p com.google.android.youtube.tv -c android.intent.category.LEANBACK_LAUNCHER 1
 EOF
 ```

@@ -16,7 +16,10 @@ import shlex
 import sys
 import time
 
-PACKAGE = "com.gathin.tvhome"
+# The launcher's application id: theme.sh passes a fork's own id in LAUNCHER_ID. Under another id the classes keep
+# their package, so the Home activity is "id/com.gathin.tvhome.MainActivity" rather than "id/.MainActivity".
+PACKAGE = os.environ.get("LAUNCHER_ID") or "com.gathin.tvhome"
+CLASSES = "." if PACKAGE == "com.gathin.tvhome" else "com.gathin.tvhome."
 SERVICES = "enabled_accessibility_services"
 FLAG = "accessibility_enabled"
 ACTION = "android.accessibilityservice.AccessibilityService"
@@ -117,7 +120,7 @@ def restart(dev, pause=time.sleep):
         if home.splitlines()[-1:] and home.splitlines()[-1].startswith(PACKAGE + "/"):
             start = "-a android.intent.action.MAIN -c android.intent.category.HOME"
         else:
-            start = "-n " + PACKAGE + "/.MainActivity"
+            start = "-n " + PACKAGE + "/" + CLASSES + "MainActivity"
         shell(dev, f"am start --user {user} {start}")
         if not helpers:
             return
