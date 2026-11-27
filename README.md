@@ -187,6 +187,20 @@ TV_HOST=<tv ip> tools/venv/bin/python tools/screenrec.py clip.mp4 10 keys.txt \
 Precisa do ffmpeg no PATH ou do pacote `imageio-ffmpeg`. Antes de publicar, recorte ou borre o que for pessoal:
 o Continuar assistindo, nomes de rede Wi-Fi, contas e nomes de dispositivo.
 
+## Arte, sons e licenças
+
+O código deste repositório é MIT, como o do CleanYourTV. A arte e os sons da skin não são, e ficam separados assim:
+
+| Recurso | Arquivos | Origem e licença |
+|---|---|---|
+| Ícones, molduras, pílulas, pergaminhos, balão de fala e a cena da abertura e do protetor (raios, ondas, brilhos) | desenhados em código (`OnePieceIcon`, `OnePieceFrames`, `OnePiecePill`, `OnePieceIntro`, `LuffyGreeting`) | criados para este projeto, MIT |
+| Fontes | `res/font/luckiest_guy.ttf`, `pirata_one.ttf`, `outfit.ttf` | Luckiest Guy: Apache 2.0; Pirata One e Outfit: SIL Open Font License |
+| Logo, fundos, animações do Luffy, voz e efeitos sonoros | `res/drawable-nodpi/onepiece_*.webp`, `res/raw/luffy_*`, `res/raw/click_*`, `res/raw/focus_*` | material de One Piece ou de terceiros; **sem licença de uso** e fora da licença MIT |
+
+One Piece pertence a Eiichiro Oda, Shueisha e Toei Animation. Este é um projeto pessoal de fã, sem fins comerciais e
+sem afiliação com eles. Não há APK publicado: quem usa compila a partir do código. Se você detém direitos sobre
+algum desses arquivos e quer que ele saia, abra uma issue: ele é removido.
+
 ## Créditos
 
 - **Launcher One Piece:** feito por [Paulouuul](https://github.com/Paulouuul).
