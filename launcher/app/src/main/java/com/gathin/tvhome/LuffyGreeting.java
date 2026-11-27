@@ -50,6 +50,8 @@ final class LuffyGreeting {
     /** The bubble goes as the line ends, with Luffy's switch to the hat spin; the typing ends about a second before
      *  the voice does, so the whole line has been on screen by then. */
     private static final long BUBBLE_HOLD_MS = 0;
+    /** Without a key for this long, the hat spin finishes the loop it is in and Luffy rests; the next key resumes it. */
+    private static final long IDLE_REST_MS = 2 * 60_000L;
 
     private final Context ctx;
     private final float density;
@@ -235,6 +237,7 @@ final class LuffyGreeting {
         typed = line.length();
         type();
         show(load(R.raw.luffy_idle, AnimatedImageDrawable.REPEAT_INFINITE), true);
+        handler.postDelayed(rest, IDLE_REST_MS);
         handler.postDelayed(() -> bubble.animate().alpha(0f).scaleX(0.9f).scaleY(0.9f).setStartDelay(0).setDuration(300)
                 .withEndAction(() -> {
                     bubble.setVisibility(View.INVISIBLE);
@@ -253,6 +256,26 @@ final class LuffyGreeting {
         if (speaking || !greeted) return;
         if (shown instanceof AnimatedImageDrawable && ((AnimatedImageDrawable) shown).isRunning()) return;
         show(load(R.raw.luffy_idle, AnimatedImageDrawable.REPEAT_INFINITE), true);
+        handler.removeCallbacks(rest);
+        handler.postDelayed(rest, IDLE_REST_MS);
+    }
+
+    /**
+     * Nobody has pressed a key for {@link #IDLE_REST_MS}: the spin plays to the end of its loop and stops there, so
+     * Home stops drawing 15 frames a second for a screen nobody is looking at. The picture stays where the loop ends.
+     */
+    private final Runnable rest = () -> {
+        if (!speaking && shown instanceof AnimatedImageDrawable) ((AnimatedImageDrawable) shown).setRepeatCount(0);
+    };
+
+    /** A key on Home: a resting Luffy spins again, and the rest is put off for another {@link #IDLE_REST_MS}. */
+    void userActive() {
+        if (speaking || !greeted || !(shown instanceof AnimatedImageDrawable)) return;
+        AnimatedImageDrawable spin = (AnimatedImageDrawable) shown;
+        spin.setRepeatCount(AnimatedImageDrawable.REPEAT_INFINITE);
+        if (!spin.isRunning()) spin.start();
+        handler.removeCallbacks(rest);
+        handler.postDelayed(rest, IDLE_REST_MS);
     }
 
     /** Home left: the voice and the animation stop, Luffy stands still and the bubble goes. */

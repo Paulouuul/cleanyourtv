@@ -1605,6 +1605,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public boolean dispatchKeyEvent(KeyEvent event) {
         // A real key, not onUserInteraction: that also runs when the firmware starts Live TV over Home at power-on.
         if (event.getAction() == KeyEvent.ACTION_DOWN) HomeKeyService.keyOnHome();
+        if (event.getAction() == KeyEvent.ACTION_DOWN && luffy != null) luffy.userActive();
         if (intro != null && intro.playing()) {
             // Any key skips the One Piece opening; it does nothing else until the opening is gone.
             if (event.getAction() == KeyEvent.ACTION_DOWN) intro.skip();
