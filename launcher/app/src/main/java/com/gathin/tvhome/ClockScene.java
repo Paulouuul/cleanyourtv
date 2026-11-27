@@ -187,6 +187,9 @@ final class ClockScene {
 
     /** The One Piece skin's bundled screensaver picture, in RGB_565 like the wallpapers. */
     private static Bitmap decodeSkin(Resources res) {
+        // At the screen's size where the decoder can scale (Android 9 and up): 1.8 MB instead of 4 MB on a 720p TV.
+        Bitmap sized = OnePieceSkin.screenSized(res, R.drawable.onepiece_screensaver, true);
+        if (sized != null) return sized;
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.RGB_565;

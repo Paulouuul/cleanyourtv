@@ -41,7 +41,7 @@ public class HomeSettingsActivity extends Activity {
     private android.view.View backdrop() {
         float d = getResources().getDisplayMetrics().density;
         android.widget.FrameLayout sea = new android.widget.FrameLayout(this);
-        sea.setBackgroundResource(R.drawable.onepiece_ocean);
+        sea.setBackground(OnePieceSkin.ocean(this));
         android.widget.LinearLayout sheet = new android.widget.LinearLayout(this);
         sheet.setOrientation(android.widget.LinearLayout.VERTICAL);
         sheet.setBackground(OnePieceSkin.sheet(d, 22 * d));

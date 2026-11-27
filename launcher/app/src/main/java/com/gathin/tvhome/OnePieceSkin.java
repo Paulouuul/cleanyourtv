@@ -29,7 +29,52 @@ final class OnePieceSkin {
      * blue-black (R.color.screen_bg), so the three screens match.
      */
     static void backdrop(View v, Config cfg) {
-        v.setBackgroundResource(on(cfg) ? R.drawable.onepiece_ocean : R.color.screen_bg);
+        if (on(cfg)) v.setBackground(ocean(v.getContext()));
+        else v.setBackgroundResource(R.color.screen_bg);
+    }
+
+    /** The deep sea, decoded once and shared by Home, the Apps screen and the settings screens while one shows it. */
+    private static java.lang.ref.WeakReference<android.graphics.Bitmap> sea;
+
+    /**
+     * The skin's deep sea at the screen's own size. Set as a resource it decodes at its full 1920x1080, 8 MB, also on
+     * a TV that draws at 1280x720 (3.7 MB there); it fills the screen either way, so nothing on screen changes.
+     */
+    static android.graphics.drawable.Drawable ocean(android.content.Context ctx) {
+        android.content.res.Resources res = ctx.getResources();
+        android.graphics.Bitmap bmp = sea != null ? sea.get() : null;
+        if (bmp == null) {
+            bmp = screenSized(res, R.drawable.onepiece_ocean, false);
+            if (bmp != null) sea = new java.lang.ref.WeakReference<>(bmp);
+        }
+        return bmp != null ? new android.graphics.drawable.BitmapDrawable(res, bmp)
+                : res.getDrawable(R.drawable.onepiece_ocean, ctx.getTheme());
+    }
+
+    /**
+     * A full-screen picture decoded straight at the screen's size (never larger than it is), or null where that is
+     * not possible (Android 8, or a failed decode), for the caller to fall back on the resource. lowRam: 16-bit
+     * pixels for an opaque picture, as the screensaver's wallpapers are.
+     */
+    @androidx.annotation.Nullable
+    static android.graphics.Bitmap screenSized(android.content.res.Resources res, int id, boolean lowRam) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) return null;
+        android.util.DisplayMetrics dm = res.getDisplayMetrics();
+        int w = Math.max(dm.widthPixels, dm.heightPixels), h = Math.min(dm.widthPixels, dm.heightPixels);
+        try {
+            return android.graphics.ImageDecoder.decodeBitmap(android.graphics.ImageDecoder.createSource(res, id),
+                    (decoder, info, source) -> {
+                        android.util.Size s = info.getSize();
+                        float k = Math.max(w / (float) s.getWidth(), h / (float) s.getHeight());
+                        if (k < 1f) decoder.setTargetSize(Math.round(s.getWidth() * k), Math.round(s.getHeight() * k));
+                        if (lowRam) {
+                            decoder.setMemorySizePolicy(android.graphics.ImageDecoder.MEMORY_POLICY_LOW_RAM);
+                            decoder.setAllocator(android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE);
+                        }
+                    });
+        } catch (java.io.IOException | RuntimeException | OutOfMemoryError e) {
+            return null;
+        }
     }
 
     /** Header text and top-bar pills; called once Home's views are set up. */
@@ -245,7 +290,7 @@ final class OnePieceSkin {
         float d = screen.getResources().getDisplayMetrics().density;
         View scroll = ((ViewGroup) screen.findViewById(android.R.id.content)).getChildAt(0);
         if (!(scroll instanceof ViewGroup) || ((ViewGroup) scroll).getChildCount() == 0) return;
-        scroll.setBackgroundResource(R.drawable.onepiece_ocean);
+        scroll.setBackground(ocean(screen));
         View list = ((ViewGroup) scroll).getChildAt(0);
         list.setBackground(sheet(d, 26 * d));
         ViewGroup.LayoutParams lp = list.getLayoutParams();
