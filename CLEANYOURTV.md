@@ -194,6 +194,7 @@ tools/venv/bin/python -I tools/wallpaper_prep.py ~/Pictures/trip mytheme/wallpap
 |---|---|
 | [`tools/tv.py`](tools/tv.py) | Pure-Python ADB client: shell, batch, push, pull, reboot, and screenshots, optionally pressing remote keys first. Works where the stock `adb` binary is blocked. Optional [paired Google ADB backend](tools/native-adb.md) for encrypted Wireless debugging. |
 | [`tools/screenrec.py`](tools/screenrec.py) | Records the TV screen while it presses remote keys over a second connection, pulls the clip and, with `--webp`, cuts it into a looping animated WebP for docs (`--crop`, `--start`, `--length`, `--fps`, `--width`). Needs ffmpeg on PATH or the `imageio-ffmpeg` package. |
+| [`tools/hprof_bitmaps.py`](tools/hprof_bitmaps.py) | Lists the bitmaps in a launcher heap dump (from a debug build, `am dumpheap -g`), largest first, with what holds each one: where the launcher's memory goes. Offline, standard library only. |
 | [`tools/docker-build.sh`](tools/docker-build.sh) | Builds the launcher or an add-on in Docker (JDK 17, Android SDK 34), so this computer needs nothing but Docker. Install the result with `SKIP_BUILD=1`. [Guide](tools/docker-build.md). |
 | [`tools/b64push.py`](tools/b64push.py) | Uploads large files such as APKs in base64 chunks and verifies the checksum. |
 | [`tools/relay.py`](tools/relay.py) | Forwards a local port to the TV's ADB port, for assistants whose sandbox can't reach your network. Listens on this computer only. [Guide](tools/relay.md). |

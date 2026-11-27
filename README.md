@@ -158,6 +158,17 @@ do modelo só ajuda com a limpeza e com ajustes já conhecidos.
 A limpeza da TV (desativar apps de fábrica e anúncios) é opcional e segue o [PROMPT.md](PROMPT.md) do
 CleanYourTV: nada é desinstalado, e tudo volta com `tools/restore.sh`.
 
+## Documentação técnica
+
+A documentação técnica da skin está em **[docs/one-piece/technical.md](docs/one-piece/technical.md)**:
+- ícones vetoriais, pílulas e molduras;
+- fontes;
+- painel do personagem e balão de fala;
+- abertura e protetor de tela;
+- efeitos sonoros;
+- otimizações de CPU e memória, com método de medição e resultados;
+- substituição de recursos.
+
 ## Gravar telas para a documentação
 
 As animações acima foram gravadas na TV com [`tools/screenrec.py`](tools/screenrec.py). Ele grava a tela
