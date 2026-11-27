@@ -94,7 +94,7 @@
     <string name="card_state_new_key">Nuova chiave</string>
     <string name="card_state_new_label">Nuovo nome</string>
     <string name="dock_edit">Modifica dock</string>
-    <string name="power_menu">Spegni…</string>
+    <string name="power_menu">Spegni</string>
     <string name="power_off">Spegni</string>
     <string name="power_confirm">Spegnere la TV?</string>
     <string name="power_yes">Sì</string>

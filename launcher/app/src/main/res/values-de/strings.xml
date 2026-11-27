@@ -43,7 +43,7 @@
     <string name="off">Aus</string>
     <string name="enable">Aktivieren</string>
     <string name="dock_edit">Dock bearbeiten</string>
-    <string name="power_menu">Ausschalten…</string>
+    <string name="power_menu">Ausschalten</string>
     <string name="power_off">Ausschalten</string>
     <string name="power_confirm">Fernseher ausschalten?</string>
     <string name="power_yes">Ja</string>

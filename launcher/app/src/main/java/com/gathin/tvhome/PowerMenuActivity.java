@@ -18,7 +18,7 @@ import android.widget.TextView;
  * The launcher's own power menu, opened from the settings menu, in place of Android's (the phone layout, which a
  * D-pad cannot use): "Power off the TV?" with Yes (rest, as a tap on the remote's power key, carried out by the Home key
  * helper) and No, which starts focused. Back closes it too. In the One Piece skin it is a parchment sheet with a
- * lantern and an anchor. No Restart: on the TCL 32S5K a restart comes back in standby, the same as Power off.
+ * lantern and an anchor. No Restart: on the TCL 32S5K, Android's own Restart switches the TV off instead of restarting it.
  * A held power key is not replaced: Android shows its own confirmation before an accessibility service hears of
  * it, so it would always flash first. On the TCL 32S5K a held key shuts the TV off with no dialog instead
  * (settings put global power_button_long_press 3), and a tap rests it (screen off).

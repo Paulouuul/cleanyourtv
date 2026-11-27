@@ -58,7 +58,7 @@
     <string name="off">No</string>
     <string name="enable">Activar</string>
     <string name="dock_edit">Editar el dock</string>
-    <string name="power_menu">Apagar…</string>
+    <string name="power_menu">Apagar</string>
     <string name="power_off">Apagar</string>
     <string name="power_confirm">¿Apagar la TV?</string>
     <string name="power_yes">Sí</string>

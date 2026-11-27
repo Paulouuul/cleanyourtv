@@ -3,7 +3,7 @@
      Everything not listed here falls back to values-pt. -->
 <resources>
     <string name="dock_edit">Editar a dock</string>
-    <string name="power_menu">Desligar…</string>
+    <string name="power_menu">Desligar</string>
     <string name="power_off">Desligar</string>
     <string name="power_confirm">Quer desligar?</string>
     <string name="power_yes">Sim</string>

@@ -94,7 +94,7 @@
     <string name="card_state_new_key">Новий ключ</string>
     <string name="card_state_new_label">Нова назва</string>
     <string name="dock_edit">Редагувати док</string>
-    <string name="power_menu">Вимкнути…</string>
+    <string name="power_menu">Вимкнути</string>
     <string name="power_off">Вимкнути</string>
     <string name="power_confirm">Вимкнути телевізор?</string>
     <string name="power_yes">Так</string>

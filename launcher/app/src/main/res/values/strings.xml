@@ -106,7 +106,7 @@
     <string name="card_state_new_label">New name</string>
     <string name="dock_edit">Edit dock</string>
     <!-- Settings menu: opens the system power menu, with Power off and Restart. -->
-    <string name="power_menu">Power off…</string>
+    <string name="power_menu">Power off</string>
     <!-- The launcher's power menu: its two buttons. Power off puts the TV in standby. -->
     <string name="power_off">Power off</string>
     <string name="power_confirm">Power off the TV?</string>

@@ -76,7 +76,7 @@
     <string name="card_state_new_key">Yangi kalit</string>
     <string name="card_state_new_label">Yangi nom</string>
     <string name="dock_edit">Dockni tahrirlash</string>
-    <string name="power_menu">O‘chirish…</string>
+    <string name="power_menu">O‘chirish</string>
     <string name="power_off">O‘chirish</string>
     <string name="power_confirm">Televizor o‘chirilsinmi?</string>
     <string name="power_yes">Ha</string>

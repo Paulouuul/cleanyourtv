@@ -77,7 +77,7 @@
     <string name="card_state_new_key">Nieuwe sleutel</string>
     <string name="card_state_new_label">Nieuwe naam</string>
     <string name="dock_edit">Dock bewerken</string>
-    <string name="power_menu">Uitzetten…</string>
+    <string name="power_menu">Uitzetten</string>
     <string name="power_off">Uitzetten</string>
     <string name="power_confirm">Tv uitzetten?</string>
     <string name="power_yes">Ja</string>

@@ -59,7 +59,7 @@ repositório, em **[CLEANYOURTV.md](CLEANYOURTV.md)**. Tudo o que ela descreve c
 | ![Tela Apps com todos os apps em molduras de madeira](docs/one-piece/apps.jpg) | **Tela Apps** (baú): todos os apps, de 4 a 7 por fileira. |
 | ![Menu ao segurar OK num app: Mover, Desinstalar, Informações do app](docs/one-piece/apps-hold-menu.jpg) | **Segurar OK num app:** Mover, Desinstalar (só apps instalados pelo dono, pela confirmação do próprio Android) e Informações do app. Na Home, os fixados também podem ser trocados por outro app. |
 | ![Configurações do launcher num pergaminho](docs/one-piece/launcher-settings.jpg) | **Configurações do launcher:** quantos apps fixados, quantos apps por fileira na tela Apps, formato do relógio e a skin ligada ou desligada. |
-| ![Diálogo Quer desligar? com Sim e Não](docs/one-piece/power-menu.jpg) | **Desligar:** o menu próprio do launcher, porque o do Android tem o layout de celular e não dá para usar com o direcional. Sim põe a TV em standby. Não tem Reiniciar: na 32S5K, reiniciar volta em standby, igual a desligar. |
+| ![Diálogo Quer desligar? com Sim e Não](docs/one-piece/power-menu.jpg) | **Desligar:** o menu próprio do launcher, porque o do Android tem o layout de celular e não dá para usar com o direcional. Sim põe a TV em standby. Não tem Reiniciar: na 32S5K, o Reiniciar do Android desliga a TV em vez de reiniciá-la, e ela só volta pelo controle. |
 
 ### Outros detalhes
 
@@ -132,7 +132,7 @@ do modelo só ajuda com a limpeza e com ajustes já conhecidos.
 |---|---|---|
 | [`config.xml`](launcher/app/src/main/res/values/config.xml) | `apps_screen`, `continue_watching`, `settings_key_panel` e `settings_pill_menu` ligados; `dock_band` desligado; `glass_style` como `rim`. | Quase tudo é questão de gosto e funciona em qualquer TV. A exceção é o `settings_key_panel` (o botão Configurações do controle abre o painel), que depende de o controle mandar essa tecla, e isso varia por marca. |
 | Tecla Home e menu de desligar | Funcionam pelo serviço instalado com `HOME_KEY_SERVICE=1`. | Costuma funcionar, mas teste com o controle de verdade: uma tecla injetada pelo ADB não prova que o botão físico passa pelo serviço. |
-| Desligar sem Reiniciar | O Reiniciar saiu porque, nesta TV, reiniciar volta em standby. | O menu só com Desligar funciona igual. |
+| Desligar sem Reiniciar | O Reiniciar saiu porque, nesta TV, o Reiniciar do Android desliga a TV em vez de reiniciá-la. | O menu só com Desligar funciona igual. |
 | Linha "Som" no painel do controle | Abre o painel lateral de som da TCL. | Abre a tela de som padrão do Android. |
 | Continuar assistindo | Crunchyroll, YouTube, Netflix e Prime Video aparecem. | Depende de os apps publicarem na tabela Watch Next do Android; alguns apps de fabricante não publicam. |
 

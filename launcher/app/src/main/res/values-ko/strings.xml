@@ -93,7 +93,7 @@
     <string name="card_state_new_key">새 키</string>
     <string name="card_state_new_label">새 이름</string>
     <string name="dock_edit">독 편집</string>
-    <string name="power_menu">전원 끄기…</string>
+    <string name="power_menu">전원 끄기</string>
     <string name="power_off">전원 끄기</string>
     <string name="power_confirm">TV를 끌까요?</string>
     <string name="power_yes">예</string>

@@ -91,7 +91,7 @@
         <item quantity="other">%1$d sovellusta</item>
     </plurals>
     <string name="dock_edit">Muokkaa telakkaa</string>
-    <string name="power_menu">Sammuta…</string>
+    <string name="power_menu">Sammuta</string>
     <string name="power_off">Sammuta</string>
     <string name="power_confirm">Sammutetaanko TV?</string>
     <string name="power_yes">Kyllä</string>

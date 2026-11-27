@@ -66,7 +66,7 @@
     <string name="off">Kapalı</string>
     <string name="enable">Etkinleştir</string>
     <string name="dock_edit">Dock\'u düzenle</string>
-    <string name="power_menu">Kapat…</string>
+    <string name="power_menu">Kapat</string>
     <string name="power_off">Kapat</string>
     <string name="power_confirm">TV kapatılsın mı?</string>
     <string name="power_yes">Evet</string>

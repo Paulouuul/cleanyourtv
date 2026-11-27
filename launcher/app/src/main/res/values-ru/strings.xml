@@ -94,7 +94,7 @@
     <string name="off">Выкл.</string>
     <string name="enable">Включить</string>
     <string name="dock_edit">Изменить док</string>
-    <string name="power_menu">Выключить…</string>
+    <string name="power_menu">Выключить</string>
     <string name="power_off">Выключить</string>
     <string name="power_confirm">Выключить телевизор?</string>
     <string name="power_yes">Да</string>
