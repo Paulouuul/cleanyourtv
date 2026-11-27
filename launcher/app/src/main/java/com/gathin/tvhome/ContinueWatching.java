@@ -181,6 +181,34 @@ final class ContinueWatching {
         }
     }
 
+    /**
+     * The widest a card shows a poster, zoomed under focus, with room to spare: about 30% of the screen's width
+     * (384 px at 720p, 576 px at 1080p), never under POSTER_PX. The power-of-two sampling stops at up to twice that.
+     */
+    private static int posterWidth(Context context) {
+        android.util.DisplayMetrics dm = context.getResources().getDisplayMetrics();
+        return Math.max(POSTER_PX, Math.max(dm.widthPixels, dm.heightPixels) * 3 / 10);
+    }
+
+    /** A poster wider than the card shows, scaled down to that width: a 600 px one went from 396 KB to about 150. */
+    private static Bitmap fit(Bitmap b, int width) {
+        if (b == null || b.getWidth() <= width) return b;
+        try {
+            Bitmap s = Bitmap.createScaledBitmap(b, width, Math.max(1, Math.round(b.getHeight() * width / (float) b.getWidth())), true);
+            if (s != b) b.recycle();
+            return s;
+        } catch (OutOfMemoryError e) {
+            return b;
+        }
+    }
+
+    /** Memory is short with Home in the background: drop the decoded posters; Home's next resume fetches them. */
+    static void clearCache() {
+        synchronized (CACHE) {
+            CACHE.clear();
+        }
+    }
+
     private static Bitmap cached(String uri) {
         if (uri == null) return null;
         synchronized (CACHE) {
@@ -191,7 +219,7 @@ final class ContinueWatching {
     /** Off the main thread, one at a time: fills item.poster and returns true when there is one to show. */
     static boolean loadPoster(Context context, Item item) {
         if (item.posterUri == null || item.poster != null) return false;
-        Bitmap b = decode(context.getContentResolver(), item.posterUri);
+        Bitmap b = fit(decode(context.getContentResolver(), item.posterUri), posterWidth(context));
         if (b == null) return false;
         synchronized (CACHE) {
             CACHE.put(item.posterUri, b);

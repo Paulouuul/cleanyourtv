@@ -1212,6 +1212,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         started = true;
         homeVisible = true;
         greetOnResume = true;
+        if (onePiece) {
+            // Both let go by onTrimMemory while Home was away; each is a no-op when it is still there.
+            if (root.getBackground() == null) root.setBackground(OnePieceSkin.ocean(this));
+            OnePieceSkin.loadSounds(this);
+            if (luffy != null) luffy.ensureStill();
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(timeReceiver, timeFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -1504,6 +1510,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         handler.removeCallbacks(clockCheck);
         stopped = true;
         tileRefresh.onStop();
+        // The key helper keeps this process in the foreground, so Android sends RUNNING_LOW once, often while Home
+        // is still in front (and keeps everything), and never again while memory stays short: onTrimMemory is only
+        // called when the level changes. Read the level now that Home is gone and let go then.
+        android.app.ActivityManager.RunningAppProcessInfo state = new android.app.ActivityManager.RunningAppProcessInfo();
+        android.app.ActivityManager.getMyMemoryState(state);
+        if (MemoryTrimPolicy.shouldRelease(state.lastTrimLevel, started)) onTrimMemory(state.lastTrimLevel);
     }
 
     /**
@@ -1526,6 +1538,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtKey = null;
         wallpaperPlayer.releaseForMemoryPressure();
         tileRefresh.invalidate();
+        // The posters (read again on the next resume) and, with the One Piece skin, the sea and Luffy's animations,
+        // which onStart and the next greeting load again. The sea's bitmap stays while the Apps screen still shows it.
+        ContinueWatching.clearCache();
+        if (continueRow != null) continueRow.dropPosters();
+        if (onePiece) {
+            root.setBackground(null);
+            if (luffy != null) luffy.release();
+            // The sounds are the whole process's: only once no screen of the launcher is left in front.
+            if (level >= TRIM_MEMORY_BACKGROUND) OnePieceSkin.releaseSounds();
+        }
     }
 
     @Override

@@ -222,6 +222,12 @@ final class ContinueRow extends LinearLayout {
         }
     }
 
+    /** Memory is short with Home in the background: the cards let go of their posters until the row is read again. */
+    void dropPosters() {
+        if (items != null) for (ContinueWatching.Item item : items) item.poster = null;
+        for (ImageView art : artViews.values()) art.setImageDrawable(null);
+    }
+
     /** A poster that arrived after the row was drawn takes the banner's place. */
     void showPoster(ContinueWatching.Item item) {
         ImageView art = artViews.get(item);

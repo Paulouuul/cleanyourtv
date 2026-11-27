@@ -172,6 +172,15 @@ final class OnePieceSkin {
         focusSounds[OnePieceIcon.WHEEL] = sounds.load(app, R.raw.focus_wheel, 1);
     }
 
+    /** Memory is short and no screen of the launcher shows: let the decoded sounds go; loadSounds() brings them back. */
+    static void releaseSounds() {
+        if (sounds == null) return;
+        sounds.release();
+        sounds = null;
+        loaded.clear();
+        pending = 0;
+    }
+
     private static final java.util.Set<Integer> loaded = new java.util.HashSet<>();
     private static int pending;
     private static float pendingVolume = 0.6f;

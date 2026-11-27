@@ -299,6 +299,11 @@ final class LuffyGreeting {
         if (was) show(load(R.raw.luffy_idle, 0), false);
     }
 
+    /** Home is back after release(): Luffy stands in his first frame again until the greeting or the spin starts. */
+    void ensureStill() {
+        if (shown == null) show(load(R.raw.luffy_idle, 0), false);
+    }
+
     void release() {
         stop();
         if (shown instanceof AnimatedImageDrawable) ((AnimatedImageDrawable) shown).stop();
